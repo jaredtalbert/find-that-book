@@ -3,3 +3,4 @@
 
 - only asks for OpenLibrary but future integrations may want to be considered 
   - use interface; can swap impl later as needed
+- letting codex do the boilerplate httpclient setup

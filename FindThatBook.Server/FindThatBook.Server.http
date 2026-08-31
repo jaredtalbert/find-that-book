@@ -1,6 +1,6 @@
 @FindThatBook.Server_HostAddress = http://localhost:5287
 
-GET {{FindThatBook.Server_HostAddress}}/weatherforecast/
+GET {{FindThatBook.Server_HostAddress}}/search?q=the%20lord%20of%20the%20rings
 Accept: application/json
 
 ###
