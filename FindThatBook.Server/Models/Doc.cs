@@ -3,11 +3,16 @@ using System.Text.Json.Serialization;
 namespace FindThatBook.Server.Models;
 
 public struct Doc { // used to represent a book returned by openlibrary
-    
-    // we probably only need cover_i, title, author_name, key
 
+    private const string DocKeyPrefix = "/works/"; // this is risky
+    
     [JsonPropertyName("key")]
-    public string Key { get; set; }
+    public string Key { 
+        get;
+        set => field = value.StartsWith(DocKeyPrefix, StringComparison.Ordinal)
+            ? value[DocKeyPrefix.Length..]
+            : value;
+    }
     
     [JsonPropertyName("title")]
     public string Title { get; set; }
@@ -15,10 +20,23 @@ public struct Doc { // used to represent a book returned by openlibrary
     [JsonPropertyName("author_name")]
     public List<string> AuthorName { get; set; } // TODO [Future]: Author object
     
+    [JsonPropertyName("author_key")]
+    public List<string> AuthorKey { get; set; } // are these guaranteed to match to the correct index? may want to hit the author endpoint later to confirm
+    
     [JsonPropertyName("cover_i")]
-    private string CoverId { get; set; }
+    public long CoverId { get; set; }
+    
+    [JsonPropertyName("first_publish_year")]
+    public long FirstPublishYear { get; set; }
     
 }
+
+//     • Book title
+//     • Primary author or authors, where available
+//     • First publish year, where available
+//     • Relevant Open Library identifiers or links
+//     • Cover image, if readily available
+//     • A concise explanation of why the result matched the query
 
 /* sample response
 {

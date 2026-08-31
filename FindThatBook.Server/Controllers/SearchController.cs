@@ -1,7 +1,7 @@
 using System.Text.Json;
-using FindThatBook.Client.Services;
-using FindThatBook.Client.Services.OpenLibrary;
 using FindThatBook.Server.Models;
+using FindThatBook.Server.Services;
+using FindThatBook.Server.Services.OpenLibrary;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FindThatBook.Server.Controllers;
@@ -31,13 +31,7 @@ public class SearchController : ControllerBase {
             // TODO: This defeats the purpose of DIing IApiConnectionService
             OpenLibraryResponse openLibraryResponse = JsonSerializer.Deserialize<OpenLibraryResponse>(content);
 
-
             return new OkObjectResult(openLibraryResponse);
-            // return new ContentResult {
-            // Content = content,
-            // ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/json",
-            // StatusCode = (int)response.StatusCode
-            // };
         } catch (HttpRequestException) {
             return Problem(statusCode: StatusCodes.Status502BadGateway,
                 title: "Unable to reach OpenLibrary.");

@@ -13,6 +13,13 @@ public struct OpenLibraryResponse {
     public List<Doc> Docs { get; set; }
 }
 
+//     • Book title
+//     • Primary author or authors, where available
+//     • First publish year, where available
+//     • Relevant Open Library identifiers or links
+//     • Cover image, if readily available
+//     • A concise explanation of why the result matched the query
+
 /* sample response
    {
        "start": 0,

@@ -1,5 +1,5 @@
-using FindThatBook.Client.Services;
-using FindThatBook.Client.Services.OpenLibrary;
+using FindThatBook.Server.Services;
+using FindThatBook.Server.Services.OpenLibrary;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 

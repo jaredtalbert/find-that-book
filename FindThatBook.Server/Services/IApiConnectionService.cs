@@ -1,8 +1,4 @@
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace FindThatBook.Client.Services;
+namespace FindThatBook.Server.Services;
 
 // providing an interface for potential future expansion to other library providers
 public interface IApiConnectionService {

@@ -5,3 +5,4 @@
   - use interface; can swap impl later as needed
 - letting codex do the boilerplate httpclient setup
 - conveniently, the OL search API handles the majority of the fuzzy searching for us
+- "fetch additional work or author details when useful" how do we determine usefulness?
