@@ -1,6 +1,6 @@
 namespace FindThatBook.Client.Models;
 
-public struct Doc { // used to represent a book
+public struct Doc { // used to represent a book returned by openlibrary
     
 }
 
