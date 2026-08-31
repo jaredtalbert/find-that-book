@@ -2,9 +2,9 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using Find_That_Book.ViewModels;
+using FindThatBook.Client.ViewModels;
 
-namespace Find_That_Book;
+namespace FindThatBook.Client;
 
 /// <summary>
 /// Given a view model, returns the corresponding view if possible.

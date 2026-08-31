@@ -1,5 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Find_That_Book.ViewModels;
+namespace FindThatBook.Client.ViewModels;
 
 public abstract class ViewModelBase : ObservableObject { }

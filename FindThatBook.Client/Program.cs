@@ -1,7 +1,7 @@
 ﻿using Avalonia;
 using System;
 
-namespace Find_That_Book;
+namespace FindThatBook.Client;
 
 sealed class Program {
     // Initialization code. Don't use any Avalonia, third-party APIs or any

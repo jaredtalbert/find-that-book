@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace Find_That_Book.Views;
+namespace FindThatBook.Client.Views;
 
 public partial class MainWindow : Window {
     public MainWindow() {

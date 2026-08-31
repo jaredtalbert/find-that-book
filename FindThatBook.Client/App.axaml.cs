@@ -1,10 +1,10 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Find_That_Book.ViewModels;
-using Find_That_Book.Views;
+using FindThatBook.Client.ViewModels;
+using FindThatBook.Client.Views;
 
-namespace Find_That_Book;
+namespace FindThatBook.Client;
 
 public partial class App : Application {
     public override void Initialize() {
