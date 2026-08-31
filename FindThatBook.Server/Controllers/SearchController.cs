@@ -29,12 +29,10 @@ public class SearchController : ControllerBase {
                 ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/json",
                 StatusCode = (int)response.StatusCode
             };
-        }
-        catch (HttpRequestException) {
+        } catch (HttpRequestException) {
             return Problem(statusCode: StatusCodes.Status502BadGateway,
                 title: "Unable to reach OpenLibrary.");
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) {
+        } catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) {
             return Problem(statusCode: StatusCodes.Status504GatewayTimeout,
                 title: "OpenLibrary did not respond in time.");
         }

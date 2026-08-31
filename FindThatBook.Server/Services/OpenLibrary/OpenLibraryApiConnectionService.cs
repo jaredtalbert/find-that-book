@@ -16,7 +16,7 @@ public class OpenLibraryApiConnectionService : IApiConnectionService {
 
     public Task<HttpResponseMessage> SearchAsync(string query, CancellationToken cancellationToken = default) {
         ArgumentException.ThrowIfNullOrWhiteSpace(query); // TODO: Return 400
-
+        
         return HttpClient.GetAsync($"search.json?q={Uri.EscapeDataString(query)}", cancellationToken);
     }
 }
