@@ -6,19 +6,14 @@ using Find_That_Book.Views;
 
 namespace Find_That_Book;
 
-public partial class App : Application
-{
-    public override void Initialize()
-    {
+public partial class App : Application {
+    public override void Initialize() {
         AvaloniaXamlLoader.Load(this);
     }
 
-    public override void OnFrameworkInitializationCompleted()
-    {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
-            desktop.MainWindow = new MainWindow
-            {
+    public override void OnFrameworkInitializationCompleted() {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
+            desktop.MainWindow = new MainWindow {
                 DataContext = new MainViewModel(),
             };
         }
