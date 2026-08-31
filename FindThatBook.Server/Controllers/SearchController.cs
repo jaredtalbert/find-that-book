@@ -1,5 +1,7 @@
+using System.Text.Json;
 using FindThatBook.Client.Services;
 using FindThatBook.Client.Services.OpenLibrary;
+using FindThatBook.Server.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FindThatBook.Server.Controllers;
@@ -22,13 +24,20 @@ public class SearchController : ControllerBase {
 
         try {
             using HttpResponseMessage response = await ApiConnectionService.SearchAsync(q, cancellationToken);
-            string content = await response.Content.ReadAsStringAsync(cancellationToken);
+            response.EnsureSuccessStatusCode();
 
-            return new ContentResult {
-                Content = content,
-                ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/json",
-                StatusCode = (int)response.StatusCode
-            };
+            string content = await response.Content.ReadAsStringAsync(cancellationToken);
+            
+            // TODO: This defeats the purpose of DIing IApiConnectionService
+            OpenLibraryResponse openLibraryResponse = JsonSerializer.Deserialize<OpenLibraryResponse>(content);
+
+
+            return new OkObjectResult(openLibraryResponse);
+            // return new ContentResult {
+            // Content = content,
+            // ContentType = response.Content.Headers.ContentType?.ToString() ?? "application/json",
+            // StatusCode = (int)response.StatusCode
+            // };
         } catch (HttpRequestException) {
             return Problem(statusCode: StatusCodes.Status502BadGateway,
                 title: "Unable to reach OpenLibrary.");

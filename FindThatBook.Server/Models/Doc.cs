@@ -1,6 +1,22 @@
-namespace FindThatBook.Client.Models;
+using System.Text.Json.Serialization;
+
+namespace FindThatBook.Server.Models;
 
 public struct Doc { // used to represent a book returned by openlibrary
+    
+    // we probably only need cover_i, title, author_name, key
+
+    [JsonPropertyName("key")]
+    public string Key { get; set; }
+    
+    [JsonPropertyName("title")]
+    public string Title { get; set; }
+    
+    [JsonPropertyName("author_name")]
+    public List<string> AuthorName { get; set; } // TODO [Future]: Author object
+    
+    [JsonPropertyName("cover_i")]
+    private string CoverId { get; set; }
     
 }
 
