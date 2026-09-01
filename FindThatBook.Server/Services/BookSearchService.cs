@@ -13,6 +13,11 @@ public sealed class BookSearchService(
     private const int EnrichmentLimit = 5;
     private const int OverallSelectionCount = 3;
 
+    private static HashSet<string> DiscoveryFillerWords { get; } = new(StringComparer.Ordinal) {
+        "a", "about", "an", "and", "book", "books", "called", "for", "in", "novel", "novels", "of", "on",
+        "or", "story", "stories", "tale", "the", "to", "where", "with"
+    };
+
     private IQueryInterpreter QueryInterpreter { get; } =
         queryInterpreter ?? throw new ArgumentNullException(nameof(queryInterpreter));
 
@@ -31,9 +36,7 @@ public sealed class BookSearchService(
 
         QueryIntent intent = await InterpretAsync(query, cancellationToken);
 
-        BookCatalogSearchResult discovery = await CatalogClient.SearchAsync(
-            CreateSearchRequest(intent),
-            cancellationToken);
+        BookCatalogSearchResult discovery = await DiscoverAsync(intent, cancellationToken);
 
         Doc[] uniqueDocuments = Deduplicate(discovery.Documents).ToArray();
 
@@ -88,6 +91,72 @@ public sealed class BookSearchService(
         return intent.UsedFallback || title is null && author is null
             ? new BookCatalogSearchRequest(RawQuery: intent.OriginalQuery, Limit: DiscoveryLimit)
             : new BookCatalogSearchRequest(Title: title, Author: author, Limit: DiscoveryLimit);
+    }
+
+    private async Task<BookCatalogSearchResult> DiscoverAsync(
+        QueryIntent intent,
+        CancellationToken cancellationToken) {
+        BookCatalogSearchRequest primaryRequest = CreateSearchRequest(intent);
+        BookCatalogSearchResult primary = await CatalogClient.SearchAsync(primaryRequest, cancellationToken);
+        Doc[] primaryDocuments = Deduplicate(primary.Documents).Take(DiscoveryLimit).ToArray();
+
+        BookCatalogSearchRequest? relaxedRequest = CreateRelaxedSearchRequest(
+            primaryRequest,
+            primaryDocuments.Length);
+
+        if (relaxedRequest is null) {
+            return new BookCatalogSearchResult(primary.Start, primary.TotalFound, primaryDocuments);
+        }
+
+        try {
+            Logger.LogInformation(
+                "Supplementing catalog discovery with relaxed query {RelaxedQuery}.",
+                relaxedRequest.RawQuery);
+
+            BookCatalogSearchResult relaxed = await CatalogClient.SearchAsync(relaxedRequest, cancellationToken);
+
+            Doc[] mergedDocuments = Deduplicate(primaryDocuments.Concat(relaxed.Documents))
+                .Take(DiscoveryLimit)
+                .ToArray();
+
+            return new BookCatalogSearchResult(
+                primary.Start,
+                Math.Max(primary.TotalFound, relaxed.TotalFound),
+                mergedDocuments);
+        } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
+            throw;
+        } catch (Exception exception) {
+            Logger.LogWarning(exception,
+                "Relaxed catalog discovery failed; retaining the primary candidate pool.");
+
+            return new BookCatalogSearchResult(primary.Start, primary.TotalFound, primaryDocuments);
+        }
+    }
+
+    private static BookCatalogSearchRequest? CreateRelaxedSearchRequest(
+        BookCatalogSearchRequest primaryRequest,
+        int primaryDocumentCount) {
+        if (primaryDocumentCount >= DiscoveryLimit || string.IsNullOrWhiteSpace(primaryRequest.RawQuery)) {
+            return null;
+        }
+
+        string[] relaxedTokens = TextNormalizer.Normalize(primaryRequest.RawQuery).LooseTokens
+            .Where(token => !DiscoveryFillerWords.Contains(token))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        if (relaxedTokens.Length < 2) {
+            return null;
+        }
+
+        string relaxedQuery = string.Join(' ', relaxedTokens);
+        string normalizedPrimary = TextNormalizer.Normalize(primaryRequest.RawQuery).Loose;
+
+        return relaxedQuery == normalizedPrimary
+            ? null
+            : new BookCatalogSearchRequest(
+                RawQuery: relaxedQuery,
+                Limit: DiscoveryLimit - primaryDocumentCount);
     }
 
     private static IEnumerable<Doc> Deduplicate(IEnumerable<Doc> documents) {
