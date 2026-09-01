@@ -290,18 +290,25 @@
                                 <Border Classes="result-card">
                                     <Grid ColumnDefinitions="Auto,*">
                                         <Border Grid.Column="0"
-                                                Width="54"
-                                                Height="72"
+                                                Width="72"
+                                                Height="106"
                                                 Margin="0,0,20,0"
                                                 CornerRadius="7"
-                                                Background="#E7E0D2">
-                                            <TextBlock Text="B"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       FontFamily="Georgia"
-                                                       FontSize="23"
-                                                       FontWeight="Bold"
-                                                       Foreground="#856B43" />
+                                                Background="#E7E0D2"
+                                                ClipToBounds="True">
+                                            <Grid>
+                                                <TextBlock Text="B"
+                                                           IsVisible="{Binding ShowCoverPlaceholder}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           FontFamily="Georgia"
+                                                           FontSize="23"
+                                                           FontWeight="Bold"
+                                                           Foreground="#856B43" />
+                                                <Image Source="{Binding CoverImage}"
+                                                       IsVisible="{Binding HasCoverImage}"
+                                                       Stretch="UniformToFill" />
+                                            </Grid>
                                         </Border>
 
                                         <StackPanel Grid.Column="1" Spacing="7">
@@ -336,6 +343,13 @@
                                                        FontSize="14"
                                                        LineHeight="21"
                                                        TextWrapping="Wrap" />
+                                            <HyperlinkButton Content="View on Open Library ↗"
+                                                             NavigateUri="{Binding OpenLibraryUri}"
+                                                             IsVisible="{Binding HasOpenLibraryUri}"
+                                                             HorizontalAlignment="Left"
+                                                             Padding="0"
+                                                             Foreground="{StaticResource AccentBrush}"
+                                                             FontWeight="SemiBold" />
                                         </StackPanel>
                                     </Grid>
                                 </Border>

@@ -25,13 +25,6 @@ dotnet run --project FindThatBook.Client --launch-profile "FindThatBook.Client: 
 The development URLs are `http://localhost:5287` for the API and `http://localhost:5235` for the browser client. The
 search endpoint is `GET /Search?q={query}`.
 
-### Limitations
-
-- The API is tightly coupled to OpenLibrary and Gemini. Future integrations will require a decent refactor.
-- Caching is not implemented, so repeated requests for the same query still go through the entire response pipeline.
-- Occasionally Gemini will hallucinate values, leading to false reasoning. For example, searching "Harry Potter" may
-  show some works with "Matches remembered details: magic, fantasy".
-
 ## Approach
 
 - Gemini attempts to normalize arbitrary "messy" input into a stable `GeminiResponse` object
@@ -42,6 +35,14 @@ search endpoint is `GET /Search?q={query}`.
   - Removes duplicates
   - Scores each candidate (details below)
   - Returns <=5 strongest candidates.
+
+### Limitations
+
+- The API is tightly coupled to OpenLibrary and Gemini. Future integrations will require a decent refactor.
+- Caching is not implemented, so repeated requests for the same query still go through the entire response pipeline.
+- Occasionally Gemini will hallucinate values, leading to false reasoning. For example, searching "Harry Potter" may
+  show some works with "Matches remembered details: magic, fantasy".
+- The deduplication logic needs improvement; OpenLibrary may return low-quality data that cannot be reliably determined as a duplicate with our current setup.
 
 ## Testing
 

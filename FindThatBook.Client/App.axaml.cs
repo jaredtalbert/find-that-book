@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using FindThatBook.Client.Services;
 using FindThatBook.Client.Services.FindThatBook;
+using FindThatBook.Client.Services.OpenLibrary;
 using FindThatBook.Client.ViewModels;
 using FindThatBook.Client.Views;
 
@@ -23,8 +24,14 @@ public partial class App : Application {
             IApiConnectionService apiConnection =
                 new FindThatBookApiConnectionService(httpClient);
 
+            HttpClient coverHttpClient = new() {
+                Timeout = TimeSpan.FromSeconds(5)
+            };
+
+            IBookCoverLoader bookCoverLoader = new OpenLibraryCoverLoader(coverHttpClient);
+
             browser.MainView = new MainWindow {
-                DataContext = new MainViewModel(apiConnection),
+                DataContext = new MainViewModel(apiConnection, bookCoverLoader),
             };
         }
 

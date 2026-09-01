@@ -7,9 +7,14 @@ using FindThatBook.Client.Services;
 
 namespace FindThatBook.Client.ViewModels;
 
-public partial class MainViewModel(IApiConnectionService apiConnectionService) : ViewModelBase {
+public partial class MainViewModel(
+    IApiConnectionService apiConnectionService,
+    IBookCoverLoader bookCoverLoader) : ViewModelBase {
     private IApiConnectionService ApiConnectionService { get; } =
         apiConnectionService ?? throw new ArgumentNullException(nameof(apiConnectionService));
+
+    private IBookCoverLoader BookCoverLoader { get; } =
+        bookCoverLoader ?? throw new ArgumentNullException(nameof(bookCoverLoader));
 
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(CanSearch))] public partial string SearchQuery { get; set; } =
         string.Empty;
@@ -64,10 +69,17 @@ public partial class MainViewModel(IApiConnectionService apiConnectionService) :
                 SearchQuery,
                 cancellationToken);
 
-            Candidates.Clear();
+            BookCandidateViewModel[] candidates = response.Results
+                .Select(CreateCandidateViewModel)
+                .ToArray();
 
-            foreach (BookSearchCandidate candidate in response.Results) {
-                Candidates.Add(CreateCandidateViewModel(candidate));
+            await Task.WhenAll(candidates.Select(candidate =>
+                candidate.LoadCoverAsync(cancellationToken)));
+
+            ClearCandidates();
+
+            foreach (BookCandidateViewModel candidate in candidates) {
+                Candidates.Add(candidate);
             }
 
             HasSearched = true;
@@ -86,8 +98,10 @@ public partial class MainViewModel(IApiConnectionService apiConnectionService) :
         }
     }
 
-    private static BookCandidateViewModel CreateCandidateViewModel(BookSearchCandidate candidate) {
-        return new BookCandidateViewModel {
+    private BookCandidateViewModel CreateCandidateViewModel(BookSearchCandidate candidate) {
+        Uri.TryCreate(candidate.OpenLibraryUrl, UriKind.Absolute, out Uri? openLibraryUri);
+
+        return new BookCandidateViewModel(BookCoverLoader) {
             Title = candidate.Title,
             Authors = candidate.Authors.Count == 0
                 ? "Unknown author"
@@ -95,7 +109,7 @@ public partial class MainViewModel(IApiConnectionService apiConnectionService) :
             FirstPublishYear = candidate.FirstPublishYear?.ToString() ?? "Year unknown",
             Confidence = candidate.Confidence.ToString(),
             Explanation = candidate.Explanation,
-            OpenLibraryUrl = candidate.OpenLibraryUrl,
+            OpenLibraryUri = openLibraryUri,
             CoverImageUrl = candidate.CoverImageUrl
         };
     }
@@ -107,9 +121,17 @@ public partial class MainViewModel(IApiConnectionService apiConnectionService) :
     }
 
     private void ShowError(string message) {
-        Candidates.Clear();
+        ClearCandidates();
         HasSearched = true;
         ErrorMessage = message;
         NotifyResultStateChanged();
+    }
+
+    private void ClearCandidates() {
+        foreach (BookCandidateViewModel candidate in Candidates) {
+            candidate.Dispose();
+        }
+
+        Candidates.Clear();
     }
 }
