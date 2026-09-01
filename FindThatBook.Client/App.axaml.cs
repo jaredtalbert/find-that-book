@@ -12,8 +12,8 @@ public partial class App : Application {
     }
 
     public override void OnFrameworkInitializationCompleted() {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop) {
-            desktop.MainWindow = new MainWindow {
+        if (ApplicationLifetime is ISingleViewApplicationLifetime browser) {
+            browser.MainView = new MainWindow {
                 DataContext = new MainViewModel(),
             };
         }

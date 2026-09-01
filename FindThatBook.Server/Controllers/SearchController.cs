@@ -34,7 +34,7 @@ public class SearchController : ControllerBase {
             return new OkObjectResult(openLibraryResponse);
         } catch (HttpRequestException) {
             return Problem(statusCode: StatusCodes.Status502BadGateway,
-                title: "Unable to reach OpenLibrary.");
+                title: "Unable to reach OpenLibrary."); // TODO: this was returned on a gemini request
         } catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) {
             return Problem(statusCode: StatusCodes.Status504GatewayTimeout,
                 title: "OpenLibrary did not respond in time.");

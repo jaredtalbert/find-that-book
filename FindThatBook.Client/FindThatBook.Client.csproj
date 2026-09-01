@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
     <PropertyGroup>
-        <OutputType>WinExe</OutputType>
         <TargetFramework>net10.0-browser</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
-        <ApplicationManifest>app.manifest</ApplicationManifest>
     </PropertyGroup>
 
     <ItemGroup>
@@ -13,7 +13,6 @@
     <ItemGroup>
         <PackageReference Include="Avalonia" Version="12.1.1"/>
         <PackageReference Include="Avalonia.Browser" Version="12.1.1"/>
-        <PackageReference Include="Avalonia.Desktop" Version="12.1.1"/>
         <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1"/>
         <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1"/>
         <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">

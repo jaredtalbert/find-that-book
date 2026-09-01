@@ -1,22 +1,226 @@
-<Window xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:FindThatBook.Client.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d"
+        d:DesignWidth="1180"
+        d:DesignHeight="760"
         x:Class="FindThatBook.Client.Views.MainWindow"
         x:DataType="vm:MainViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="Find_That_Book">
+        Background="#F5F2EA"
+        MinWidth="760">
 
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <TextBox Text="{Binding Greeting}"
-             HorizontalAlignment="Center"
-             VerticalAlignment="Center" />
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="InkBrush" Color="#22231F" />
+        <SolidColorBrush x:Key="MutedInkBrush" Color="#686960" />
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFEFA" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#315B4B" />
+        <SolidColorBrush x:Key="AccentHoverBrush" Color="#25483B" />
+        <SolidColorBrush x:Key="HairlineBrush" Color="#DDD9CE" />
+    </UserControl.Resources>
 
-</Window>
+    <UserControl.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="FontFamily" Value="Inter" />
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+        </Style>
+        <Style Selector="TextBlock.eyebrow">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+            <Setter Property="LetterSpacing" Value="1.4" />
+        </Style>
+        <Style Selector="TextBlock.title">
+            <Setter Property="FontFamily" Value="Georgia" />
+            <Setter Property="FontSize" Value="42" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="LineHeight" Value="48" />
+        </Style>
+        <Style Selector="TextBlock.section-title">
+            <Setter Property="FontFamily" Value="Georgia" />
+            <Setter Property="FontSize" Value="23" />
+            <Setter Property="FontWeight" Value="Bold" />
+        </Style>
+        <Style Selector="Button.search-button">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="Padding" Value="24,0" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.search-button:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource AccentHoverBrush}" />
+        </Style>
+        <Style Selector="TextBox.search-box">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0"
+                Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource HairlineBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="40,18">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                    <Border Width="38" Height="38" CornerRadius="10" Background="{StaticResource AccentBrush}">
+                        <TextBlock Text="B"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontFamily="Georgia"
+                                   FontSize="21"
+                                   FontWeight="Bold"
+                                   Foreground="White" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center" Spacing="-2">
+                        <TextBlock Text="FIND THAT BOOK" Classes="eyebrow" />
+                        <TextBlock Text="Library discovery" FontSize="12" Foreground="{StaticResource MutedInkBrush}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Border Grid.Column="2"
+                        Padding="12,7"
+                        CornerRadius="20"
+                        Background="#E9EFEA">
+                    <TextBlock Text="OPEN LIBRARY"
+                               Classes="eyebrow"
+                               LetterSpacing="0.8"
+                               VerticalAlignment="Center" />
+                </Border>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1">
+            <Grid Margin="40,54,40,44" MaxWidth="1040" HorizontalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0" ColumnDefinitions="3*,2*">
+                    <StackPanel Grid.Column="0" Spacing="16" Margin="0,0,48,0">
+                        <TextBlock Text="SEARCH YOUR NEXT READ" Classes="eyebrow" />
+                        <TextBlock Text="A half-remembered story is enough."
+                                   Classes="title"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="650" />
+                        <TextBlock Text="Enter any title fragment, author, character, plot detail, or stray keyword you can remember."
+                                   FontSize="17"
+                                   LineHeight="27"
+                                   Foreground="{StaticResource MutedInkBrush}"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="620" />
+                    </StackPanel>
+
+                    <Border Grid.Column="1"
+                            Background="#E7E0D2"
+                            CornerRadius="22"
+                            Padding="30"
+                            MinHeight="190">
+                        <StackPanel VerticalAlignment="Center" Spacing="14">
+                            <TextBlock Text="TRY SOMETHING MESSY" Classes="eyebrow" Foreground="#856B43" />
+                            <TextBlock Text="“A boy at a strange school, probably British, with magic.”"
+                                       FontFamily="Georgia"
+                                       FontStyle="Italic"
+                                       FontSize="20"
+                                       LineHeight="29"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Text="Titles, authors, and details can all live in one query."
+                                       FontSize="13"
+                                       Foreground="{StaticResource MutedInkBrush}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Grid.Row="1"
+                        Margin="0,42,0,50"
+                        Padding="10"
+                        Background="{StaticResource SurfaceBrush}"
+                        BorderBrush="{StaticResource HairlineBrush}"
+                        BorderThickness="1"
+                        CornerRadius="17"
+                        BoxShadow="0 12 32 0 #18000000">
+                    <Grid ColumnDefinitions="Auto,*,Auto" Height="58">
+                        <PathIcon Grid.Column="0"
+                                  Width="21"
+                                  Height="21"
+                                  Margin="14,0,4,0"
+                                  Foreground="{StaticResource MutedInkBrush}"
+                                  VerticalAlignment="Center"
+                                  Data="M9.5,3 A6.5,6.5 0 1 0 9.5,16 A6.5,6.5 0 1 0 9.5,3 M14.3,14.3 L20,20" />
+                        <TextBox Grid.Column="1"
+                                 Classes="search-box"
+                                 Text="{Binding SearchQuery}"
+                                 PlaceholderText="What do you remember?" />
+                        <Button Grid.Column="2"
+                                Classes="search-button"
+                                Content="Search books"
+                                MinWidth="142" />
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Row="2" Spacing="18">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="5">
+                            <TextBlock Text="Candidates" Classes="section-title" />
+                            <TextBlock Text="The strongest matches will appear here."
+                                       FontSize="14"
+                                       Foreground="{StaticResource MutedInkBrush}" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1"
+                                   Text="0 RESULTS"
+                                   Classes="eyebrow"
+                                   Foreground="{StaticResource MutedInkBrush}"
+                                   VerticalAlignment="Bottom" />
+                    </Grid>
+
+                    <Border Height="200"
+                            Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource HairlineBrush}"
+                            BorderThickness="1"
+                            CornerRadius="18">
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="10">
+                            <Border Width="48" Height="48" CornerRadius="24" Background="#E9EFEA">
+                                <TextBlock Text="?"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontFamily="Georgia"
+                                           FontSize="24"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource AccentBrush}" />
+                            </Border>
+                            <TextBlock Text="Your shelf is waiting"
+                                       FontFamily="Georgia"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="Start with anything you remember about the book."
+                                       FontSize="13"
+                                       Foreground="{StaticResource MutedInkBrush}"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
