@@ -36,7 +36,8 @@ public sealed class CandidateRanker : ICandidateRanker {
     }
 
     private static RankedCandidate Evaluate(QueryIntent intent, CandidateRankingInput candidate) {
-        TitleEvidence title = EvaluateTitle(intent.Title, candidate.SearchDocument.Title);
+        string candidateTitle = candidate.RankingMetadata.CanonicalTitle ?? candidate.SearchDocument.Title;
+        TitleEvidence title = EvaluateTitle(intent.Title, candidateTitle);
         AuthorEvidence author = EvaluateAuthor(intent.Author, candidate);
         KeywordEvidence keywords = EvaluateKeywords(intent.KeywordFields, candidate);
         YearEvidence year = EvaluateYear(intent.Year, candidate.SearchDocument.FirstPublishYear);
@@ -50,6 +51,7 @@ public sealed class CandidateRanker : ICandidateRanker {
             author.IsMeaningful,
             author.IsPrimary,
             author.HasCanonicalConflict,
+            author.Source,
             keywords.Matches,
             keywords.Score,
             keywords.HasDistinctiveMatch,
@@ -133,11 +135,18 @@ public sealed class CandidateRanker : ICandidateRanker {
             ? metadata.CanonicalAuthors
             : candidate.SearchDocument.AuthorName ?? [];
 
+        AuthorEvidenceSource source = metadata.HasCanonicalAuthorData
+            ? AuthorEvidenceSource.CanonicalWork
+            : AuthorEvidenceSource.SearchResponse;
+
         AuthorEvidence best = AuthorEvidence.None;
 
         for (int index = 0; index < authors.Count; index++) {
-            AuthorEvidence current =
-                CompareAuthor(queryField, authors[index], index == 0 && metadata.HasCanonicalAuthorData);
+            AuthorEvidence current = CompareAuthor(
+                queryField,
+                authors[index],
+                index == 0 && metadata.HasCanonicalAuthorData,
+                source);
 
             if (current.Score > best.Score) {
                 best = current;
@@ -146,10 +155,17 @@ public sealed class CandidateRanker : ICandidateRanker {
 
         bool canConflict = queryField.Provenance != QueryFieldProvenance.Inferred;
 
-        if (metadata.HasCanonicalAuthorData && metadata.CanonicalAuthors.Count > 0 && !best.IsMeaningful &&
+        bool hasNamedCanonicalAuthor = metadata.CanonicalAuthors.Any(author => !string.IsNullOrWhiteSpace(author));
+
+        if (metadata.HasCanonicalAuthorData && metadata.HasCompleteCanonicalAuthorData &&
+            hasNamedCanonicalAuthor && !best.IsMeaningful &&
             canConflict) {
             return new AuthorEvidence(AuthorMatchKind.CanonicalConflict,
-                RankingScores.AuthorCanonicalConflict, false, false, true);
+                RankingScores.AuthorCanonicalConflict,
+                false,
+                false,
+                true,
+                AuthorEvidenceSource.CanonicalWork);
         }
 
         return best;
@@ -158,7 +174,8 @@ public sealed class CandidateRanker : ICandidateRanker {
     private static AuthorEvidence CompareAuthor(
         QueryField<string> queryField,
         string? candidateAuthor,
-        bool isPrimary) {
+        bool isPrimary,
+        AuthorEvidenceSource source) {
         if (string.IsNullOrWhiteSpace(candidateAuthor)) {
             return AuthorEvidence.None;
         }
@@ -229,7 +246,7 @@ public sealed class CandidateRanker : ICandidateRanker {
         return AuthorEvidence.None;
 
         AuthorEvidence Author(AuthorMatchKind kind, int score, bool meaningful) =>
-            new(kind, ApplyProvenance(score, queryField.Provenance), meaningful, isPrimary, false);
+            new(kind, ApplyProvenance(score, queryField.Provenance), meaningful, isPrimary, false, source);
     }
 
     private static KeywordEvidence EvaluateKeywords(
@@ -239,7 +256,9 @@ public sealed class CandidateRanker : ICandidateRanker {
             return KeywordEvidence.None;
         }
 
-        HashSet<string> titleTokens = TextNormalizer.NormalizeTitle(candidate.SearchDocument.Title).Full.LooseTokens
+        string candidateTitle = candidate.RankingMetadata.CanonicalTitle ?? candidate.SearchDocument.Title;
+
+        HashSet<string> titleTokens = TextNormalizer.NormalizeTitle(candidateTitle).Full.LooseTokens
             .ToHashSet(StringComparer.Ordinal);
 
         HashSet<string> subjectTokens = candidate.SearchDocument.Subjects
@@ -483,8 +502,15 @@ public sealed class CandidateRanker : ICandidateRanker {
         int Score,
         bool IsMeaningful,
         bool IsPrimary,
-        bool HasCanonicalConflict) {
-        public static AuthorEvidence None { get; } = new(AuthorMatchKind.None, 0, false, false, false);
+        bool HasCanonicalConflict,
+        AuthorEvidenceSource Source) {
+        public static AuthorEvidence None { get; } = new(
+            AuthorMatchKind.None,
+            0,
+            false,
+            false,
+            false,
+            AuthorEvidenceSource.None);
     }
 
     private sealed record KeywordEvidence(

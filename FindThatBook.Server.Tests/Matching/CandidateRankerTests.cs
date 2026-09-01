@@ -58,6 +58,7 @@ public class CandidateRankerTests {
 
         Assert.Equal(AuthorMatchKind.ExactFullName, result.Evidence.AuthorKind);
         Assert.Equal(RankingScores.AuthorExactFull, result.Evidence.AuthorScore);
+        Assert.Equal(AuthorEvidenceSource.SearchResponse, result.Evidence.AuthorSource);
         Assert.True(result.IsUseful);
     }
 
@@ -103,14 +104,31 @@ public class CandidateRankerTests {
 
         CandidateRankingMetadata metadata = new(
             CanonicalAuthorNames: ["Frank Herbert"],
-            HasCanonicalAuthorData: true);
+            HasCanonicalAuthorData: true,
+            HasCompleteCanonicalAuthorData: true);
 
         RankedCandidate result = Single(intent, Candidate("work-1", "Dune", metadata: metadata));
 
         Assert.Equal(AuthorMatchKind.CanonicalConflict, result.Evidence.AuthorKind);
         Assert.Equal(RankingScores.AuthorCanonicalConflict, result.Evidence.AuthorScore);
         Assert.True(result.Evidence.HasCanonicalAuthorConflict);
+        Assert.Equal(AuthorEvidenceSource.CanonicalWork, result.Evidence.AuthorSource);
         Assert.False(result.IsUseful);
+    }
+
+    [Fact]
+    public void Rank_UsesCanonicalTitleForFinalEvidence() {
+        QueryIntent intent = Intent(title: "Canonical Title");
+
+        CandidateRankingInput candidate = Candidate(
+            "work-1",
+            "Search Result Title",
+            metadata: new CandidateRankingMetadata(CanonicalTitle: "Canonical Title"));
+
+        RankedCandidate result = Single(intent, candidate);
+
+        Assert.Equal(TitleMatchKind.ExactFullTitle, result.Evidence.TitleKind);
+        Assert.True(result.IsUseful);
     }
 
     [Fact]
@@ -119,12 +137,29 @@ public class CandidateRankerTests {
 
         CandidateRankingMetadata metadata = new(
             CanonicalAuthorNames: ["Margaret Atwood"],
-            HasCanonicalAuthorData: true);
+            HasCanonicalAuthorData: true,
+            HasCompleteCanonicalAuthorData: true);
 
         RankedCandidate result = Single(intent, Candidate("work-1", "A Book", metadata: metadata));
 
         Assert.Equal(AuthorMatchKind.CanonicalConflict, result.Evidence.AuthorKind);
         Assert.False(result.IsUseful);
+    }
+
+    [Fact]
+    public void Rank_PartialCanonicalAuthorsCannotConfirmAConflict() {
+        QueryIntent intent = Intent(title: "Shared Title", author: "Primary Author");
+
+        CandidateRankingMetadata metadata = new(
+            CanonicalAuthorNames: [string.Empty, "Secondary Author"],
+            HasCanonicalAuthorData: true,
+            HasCompleteCanonicalAuthorData: false);
+
+        RankedCandidate result = Single(intent,
+            Candidate("work-1", "Shared Title", metadata: metadata));
+
+        Assert.False(result.Evidence.HasCanonicalAuthorConflict);
+        Assert.True(result.IsUseful);
     }
 
     [Fact]

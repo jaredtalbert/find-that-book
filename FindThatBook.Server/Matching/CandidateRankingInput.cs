@@ -6,7 +6,9 @@ public sealed record CandidateRankingMetadata(
     IReadOnlyList<string>? Subjects = null,
     long? EditionCount = null,
     IReadOnlyList<string>? CanonicalAuthorNames = null,
-    bool HasCanonicalAuthorData = false) {
+    bool HasCanonicalAuthorData = false,
+    bool HasCompleteCanonicalAuthorData = false,
+    string? CanonicalTitle = null) {
     public IReadOnlyList<string> SubjectValues => Subjects ?? [];
 
     public IReadOnlyList<string> CanonicalAuthors => CanonicalAuthorNames ?? [];

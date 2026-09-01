@@ -19,6 +19,12 @@ public enum AuthorMatchKind {
     CanonicalConflict
 }
 
+public enum AuthorEvidenceSource {
+    None,
+    SearchResponse,
+    CanonicalWork
+}
+
 public enum YearMatchKind {
     None,
     OutsideTolerance,
@@ -36,6 +42,7 @@ public sealed record MatchEvidence(
     bool HasMeaningfulAuthorMatch,
     bool IsCanonicalPrimaryAuthorMatch,
     bool HasCanonicalAuthorConflict,
+    AuthorEvidenceSource AuthorSource,
     IReadOnlyList<string> MatchedKeywords,
     int KeywordScore,
     bool HasDistinctiveKeywordMatch,

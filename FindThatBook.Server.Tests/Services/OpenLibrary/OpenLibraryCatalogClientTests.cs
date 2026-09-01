@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using FindThatBook.Server.Models;
+using FindThatBook.Server.Services;
 using FindThatBook.Server.Services.OpenLibrary;
 using Xunit;
 
@@ -32,12 +33,12 @@ public class OpenLibraryCatalogClientTests {
                                 """);
         });
 
-        OpenLibrarySearchRequest request = new(
+        BookCatalogSearchRequest request = new(
             RawQuery: "ignored fallback",
             Title: "song of achilles",
             Author: "Madeline Miller");
 
-        OpenLibraryResponse response = await client.SearchAsync(request, CancellationToken.None);
+        BookCatalogSearchResult response = await client.SearchAsync(request, CancellationToken.None);
 
         Assert.NotNull(requestedUri);
         Assert.Equal("/search.json", requestedUri.AbsolutePath);
@@ -52,7 +53,7 @@ public class OpenLibraryCatalogClientTests {
             "key,title,author_name,author_key,first_publish_year,edition_count,cover_i,subject",
             query["fields"]);
 
-        Doc document = Assert.Single(response.Docs);
+        Doc document = Assert.Single(response.Documents);
         Assert.Equal("OL16509148W", document.Key);
         Assert.Equal("OL1926056A", Assert.Single(document.AuthorKey));
         Assert.Equal("Madeline Miller", Assert.Single(document.AuthorName));
@@ -73,7 +74,7 @@ public class OpenLibraryCatalogClientTests {
         });
 
         await client.SearchAsync(
-            new OpenLibrarySearchRequest(RawQuery: "boy wizard school"),
+            new BookCatalogSearchRequest(RawQuery: "boy wizard school"),
             CancellationToken.None);
 
         IReadOnlyDictionary<string, string> query = ParseQuery(Assert.IsType<Uri>(requestedUri));
@@ -96,11 +97,11 @@ public class OpenLibraryCatalogClientTests {
                                                                          }
                                                                          """));
 
-        OpenLibraryResponse response = await client.SearchAsync(
-            new OpenLibrarySearchRequest(RawQuery: "anything"),
+        BookCatalogSearchResult response = await client.SearchAsync(
+            new BookCatalogSearchRequest(RawQuery: "anything"),
             CancellationToken.None);
 
-        Doc document = Assert.Single(response.Docs);
+        Doc document = Assert.Single(response.Documents);
         Assert.Equal(string.Empty, document.Title);
         Assert.Empty(document.AuthorName);
         Assert.Empty(document.AuthorKey);
@@ -130,13 +131,13 @@ public class OpenLibraryCatalogClientTests {
                                 """);
         });
 
-        OpenLibraryWork work = await client.GetWorkAsync(
+        BookCatalogWork work = await client.GetWorkAsync(
             "/works/OL27448W",
             CancellationToken.None);
 
         Assert.Equal("/works/OL27448W.json", requestedUri?.AbsolutePath);
         Assert.Equal("OL27448W", work.Key);
-        Assert.Equal(["OL26320A", "OL999A"], work.Authors.Select(author => author.Author.Key));
+        Assert.Equal(["OL26320A", "OL999A"], work.AuthorKeys);
         Assert.Equal(["Middle Earth", "Fantasy fiction"], work.Subjects);
     }
 
@@ -156,7 +157,7 @@ public class OpenLibraryCatalogClientTests {
                                 """);
         });
 
-        OpenLibraryAuthor author = await client.GetAuthorAsync(
+        BookCatalogAuthor author = await client.GetAuthorAsync(
             "OL26320A",
             CancellationToken.None);
 
@@ -206,7 +207,7 @@ public class OpenLibraryCatalogClientTests {
         OpenLibraryCatalogClient client = CreateClient(_ => JsonResponse("{\"docs\":[]}"));
 
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
-            client.SearchAsync(new OpenLibrarySearchRequest(RawQuery: "query", Limit: limit),
+            client.SearchAsync(new BookCatalogSearchRequest(RawQuery: "query", Limit: limit),
                 CancellationToken.None));
     }
 
@@ -215,7 +216,7 @@ public class OpenLibraryCatalogClientTests {
         OpenLibraryCatalogClient client = CreateClient(_ => JsonResponse("{\"docs\":[]}"));
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            client.SearchAsync(new OpenLibrarySearchRequest(), CancellationToken.None));
+            client.SearchAsync(new BookCatalogSearchRequest(), CancellationToken.None));
     }
 
     [Theory]

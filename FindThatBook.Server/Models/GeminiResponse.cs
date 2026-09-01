@@ -1,12 +1,23 @@
 namespace FindThatBook.Server.Models;
 
-public struct GeminiResponse {
+public sealed class GeminiResponse {
+    public GeminiTextField? Title { get; set; }
 
-    public string? Title { get; init; }
+    public GeminiTextField? Author { get; set; }
 
-    public string? Author { get; init; }
+    public List<GeminiTextField> Keywords { get; set; } = [];
 
-    public List<string>? Keywords { get; init; }
+    public GeminiYearField? Year { get; set; }
+}
 
-    public long? Year { get; init; }
+public sealed class GeminiTextField {
+    public string? Value { get; set; }
+
+    public string? Provenance { get; set; }
+}
+
+public sealed class GeminiYearField {
+    public long? Value { get; set; }
+
+    public string? Provenance { get; set; }
 }

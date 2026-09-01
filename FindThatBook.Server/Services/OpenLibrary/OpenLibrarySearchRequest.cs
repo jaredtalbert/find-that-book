@@ -2,7 +2,7 @@ using System.Globalization;
 
 namespace FindThatBook.Server.Services.OpenLibrary;
 
-public sealed record OpenLibrarySearchRequest(
+internal sealed record OpenLibrarySearchRequest(
     string? RawQuery = null,
     string? Title = null,
     string? Author = null,

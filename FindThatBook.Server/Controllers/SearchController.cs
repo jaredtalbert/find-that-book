@@ -1,21 +1,14 @@
 using System.Text.Json;
-using FindThatBook.Server.Models;
-using FindThatBook.Server.Serialization;
 using FindThatBook.Server.Services;
-using FindThatBook.Server.Services.OpenLibrary;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FindThatBook.Server.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class SearchController : ControllerBase {
-    private IApiConnectionService ApiConnectionService { get; }
-
-    public SearchController(
-        [FromKeyedServices(OpenLibraryApiConnectionService.ServiceKey)] IApiConnectionService apiConnectionService) {
-        ApiConnectionService = apiConnectionService;
-    }
+public class SearchController(IBookSearchService bookSearchService) : ControllerBase {
+    private IBookSearchService BookSearchService { get; } =
+        bookSearchService ?? throw new ArgumentNullException(nameof(bookSearchService));
 
     [HttpGet]
     public async Task<IActionResult> SearchAsync([FromQuery] string q, CancellationToken cancellationToken) {
@@ -24,20 +17,13 @@ public class SearchController : ControllerBase {
         }
 
         try {
-            using HttpResponseMessage response = await ApiConnectionService.SearchAsync(q, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            string content = await response.Content.ReadAsStringAsync(cancellationToken);
-
-            // TODO: This defeats the purpose of DIing IApiConnectionService
-            OpenLibraryResponse openLibraryResponse = JsonSerializer.Deserialize<OpenLibraryResponse>(
-                content,
-                JsonDefaults.Options) ?? throw new JsonException("OpenLibrary returned an empty response.");
-
-            return new OkObjectResult(openLibraryResponse);
+            return Ok(await BookSearchService.SearchAsync(q, cancellationToken));
         } catch (HttpRequestException) {
             return Problem(statusCode: StatusCodes.Status502BadGateway,
-                title: "Unable to reach OpenLibrary."); // TODO: this was returned on a gemini request
+                title: "Unable to reach OpenLibrary.");
+        } catch (JsonException) {
+            return Problem(statusCode: StatusCodes.Status502BadGateway,
+                title: "OpenLibrary returned an invalid response.");
         } catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) {
             return Problem(statusCode: StatusCodes.Status504GatewayTimeout,
                 title: "OpenLibrary did not respond in time.");

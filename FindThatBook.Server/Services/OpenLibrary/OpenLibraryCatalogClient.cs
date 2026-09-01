@@ -5,42 +5,64 @@ using FindThatBook.Server.Serialization;
 namespace FindThatBook.Server.Services.OpenLibrary;
 
 /// <summary>
-/// Typed access to Open Library. This remains separate from the legacy raw-response
-/// service until search orchestration is migrated in the next implementation chunk.
+/// Adapts Open Library's transport models and endpoints to the catalog abstraction
+/// consumed by search orchestration.
 /// </summary>
-public sealed class OpenLibraryCatalogClient {
-    private readonly HttpClient _httpClient;
+public sealed class OpenLibraryCatalogClient : IBookCatalogClient {
+    private HttpClient HttpClient { get; }
 
     public OpenLibraryCatalogClient(HttpClient httpClient) {
-        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        HttpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     }
 
-    public Task<OpenLibraryResponse> SearchAsync(
-        OpenLibrarySearchRequest request,
+    public async Task<BookCatalogSearchResult> SearchAsync(
+        BookCatalogSearchRequest request,
         CancellationToken cancellationToken = default) {
         ArgumentNullException.ThrowIfNull(request);
 
-        return GetAsync<OpenLibraryResponse>(request.BuildRelativeUri(), cancellationToken);
+        OpenLibrarySearchRequest openLibraryRequest = new(
+            request.RawQuery,
+            request.Title,
+            request.Author,
+            request.Limit);
+
+        OpenLibraryResponse response = await GetAsync<OpenLibraryResponse>(
+            openLibraryRequest.BuildRelativeUri(),
+            cancellationToken);
+
+        return new BookCatalogSearchResult(response.Start, response.NumFound, response.Docs);
     }
 
-    public Task<OpenLibraryWork> GetWorkAsync(
+    public async Task<BookCatalogWork> GetWorkAsync(
         string workKey,
         CancellationToken cancellationToken = default) {
         string normalizedKey = RequireKey(OpenLibraryKeys.Work(workKey), nameof(workKey));
 
-        return GetAsync<OpenLibraryWork>($"works/{Uri.EscapeDataString(normalizedKey)}.json", cancellationToken);
+        OpenLibraryWork work = await GetAsync<OpenLibraryWork>(
+            $"works/{Uri.EscapeDataString(normalizedKey)}.json",
+            cancellationToken);
+
+        return new BookCatalogWork(
+            work.Key,
+            work.Title,
+            work.Authors.Select(author => author.Author.Key).ToArray(),
+            work.Subjects);
     }
 
-    public Task<OpenLibraryAuthor> GetAuthorAsync(
+    public async Task<BookCatalogAuthor> GetAuthorAsync(
         string authorKey,
         CancellationToken cancellationToken = default) {
         string normalizedKey = RequireKey(OpenLibraryKeys.Author(authorKey), nameof(authorKey));
 
-        return GetAsync<OpenLibraryAuthor>($"authors/{Uri.EscapeDataString(normalizedKey)}.json", cancellationToken);
+        OpenLibraryAuthor author = await GetAsync<OpenLibraryAuthor>(
+            $"authors/{Uri.EscapeDataString(normalizedKey)}.json",
+            cancellationToken);
+
+        return new BookCatalogAuthor(author.Key, author.Name, author.AlternateNames);
     }
 
     private async Task<T> GetAsync<T>(string requestUri, CancellationToken cancellationToken) {
-        using HttpResponseMessage response = await _httpClient.GetAsync(requestUri, cancellationToken);
+        using HttpResponseMessage response = await HttpClient.GetAsync(requestUri, cancellationToken);
         response.EnsureSuccessStatusCode();
 
         T? result = await response.Content.ReadFromJsonAsync<T>(JsonDefaults.Options, cancellationToken);

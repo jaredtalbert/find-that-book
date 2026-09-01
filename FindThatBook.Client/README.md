@@ -5,6 +5,7 @@
   - boilerplate 
   - Initial client UI
   - Normalizer
+  - Ranking pipeline
 ## Web API
 
 ### Limitations

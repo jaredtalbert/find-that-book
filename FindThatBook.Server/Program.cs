@@ -1,3 +1,5 @@
+using FindThatBook.Server.Gemini;
+using FindThatBook.Server.Matching;
 using FindThatBook.Server.Services;
 using FindThatBook.Server.Services.OpenLibrary;
 
@@ -10,17 +12,16 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
 
-
-builder.Services.AddHttpClient(OpenLibraryApiConnectionService.ServiceKey, client => {
+builder.Services.AddHttpClient<IBookCatalogClient, OpenLibraryCatalogClient>(client => {
     client.BaseAddress = new Uri("https://openlibrary.org/");
     client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
     client.Timeout = TimeSpan.FromSeconds(5);
 });
 
-// Each provider gets its own key and client configuration, even when sharing the interface.
-builder.Services.AddKeyedTransient<IApiConnectionService>(OpenLibraryApiConnectionService.ServiceKey,
-    (services, _) => new OpenLibraryApiConnectionService(
-        services.GetRequiredService<IHttpClientFactory>().CreateClient(OpenLibraryApiConnectionService.ServiceKey)));
+builder.Services.AddSingleton<IGeminiTextClient, GeminiTextClient>();
+builder.Services.AddTransient<IQueryInterpreter, GeminiQueryInterpreter>();
+builder.Services.AddSingleton<ICandidateRanker, CandidateRanker>();
+builder.Services.AddTransient<IBookSearchService, BookSearchService>();
 
 WebApplication app = builder.Build();
 
