@@ -5,13 +5,13 @@
   - Client UI
   - Normalizer
   - Ranking pipeline
+  - Helping write this readme
 
 ## Live Deployment:
 https://find-that-book-s131.onrender.com
 (may take a minute or so to start up since it goes to sleep after a few minutes of inactivity)
 
 ## Setup and Run
-
 Requirements: .NET 10 SDK and a Gemini API key.
 
 Set `GEMINI_API_KEY` in your local environment or IDE run configuration.
@@ -28,6 +28,7 @@ search endpoint is `GET /Search?q={query}`.
 ## Approach
 
 - Gemini attempts to normalize arbitrary "messy" input into a stable `GeminiResponse` object
+  - Using an LLM for this task is significantly more straightforward than attempting to do it deterministically, at least as long as a "type anything" input field exists.
 - If Gemini is not available or otherwise returns an invalid response, we fall back to searching the API using the raw
   query.
 - The initial pool of results ("candidates") from OpenLibrary is passed into the response pipeline which:
@@ -55,8 +56,15 @@ search endpoint is `GET /Search?q={query}`.
 - Raw score alone does not make a result eligible: title and author queries require a meaningful match, while
   keyword-only queries require two matches or one distinctive keyword. Fallback queries may qualify through meaningful
   title, author, or keyword evidence.
-- Candidates are ordered by total score, then evidence strength, primary-author match, component scores, exact year,
-  edition count, and OpenLibrary key to produce stable ties. Only eligible candidates are returned.
+- Candidates are ordered by:
+  - total score, then 
+  - evidence strength, 
+  - primary-author match, 
+  - component scores, 
+  - exact year,
+  - edition count, and 
+  - OpenLibrary key 
+  to produce stable ties. Only relevant candidates are returned.
 
 ### Limitations
 
