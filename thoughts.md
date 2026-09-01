@@ -8,3 +8,4 @@
 - "fetch additional work or author details when useful" how do we determine usefulness?
 - we probably want the server to be in charge of the Gemini client to prevent abuse
   - given more time, we'd want to enforce rate limits
+- we can use gemini to build a couple more specific queries

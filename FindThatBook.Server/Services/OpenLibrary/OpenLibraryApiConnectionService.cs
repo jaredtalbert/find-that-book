@@ -15,8 +15,8 @@ public class OpenLibraryApiConnectionService : IApiConnectionService {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
 
         // TODO: how do we determine whether or not to use AI? a toggle? heuristics? more AI?
-        string geminiResult = await GeminiService.SimplifyUserQueryAsync(query);
-        
+        string geminiResult = await GeminiClient.SimplifyUserQueryAsync(query);
+
         // TODO: the OL API lets us request specific fields; adjust the query parameters so we're not wasting resources
         return await HttpClient.GetAsync($"search.json?q={Uri.EscapeDataString(geminiResult)}", cancellationToken);
     }
