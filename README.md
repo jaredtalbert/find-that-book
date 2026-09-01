@@ -84,6 +84,7 @@ dotnet test "Find That Book.sln"
 
 ## Completed Extras
 - `More sophisticated normalization for punctuation, diacritics, subtitles, aliases, or misspellings`
+  - Caveat: We're not accounting for aliases yet
 - `Advanced contributor-vs-primary-author resolution using additional Open Library endpoints`
 - `A deployed demo or hosted version of the project`
 
@@ -92,12 +93,15 @@ dotnet test "Find That Book.sln"
   - Reversing the order on this reduces latency
 - `Caching, retries, resilience policies, observability, or other production-oriented API concerns`
   - Time constraints
+  - The API _does_ account for timeouts and other external API failures with user-facing failures.
 - `A richer UI, accessibility refinements, loading states, or thoughtful interaction design beyond the basic
   workflow`
   - The UI is generic AI boilerplate design.
+  - Loading, empty, and error states _do_ exist.
 - `Additional automated test coverage, contract tests, or test doubles around external dependencies`
-  - We could include integration tests to refine the Gemini prompt to mitigate hallucinations or otherwise low-quality responses
+  - Specifically, there are no client tests or integration tests for OpenLibrary or Gemini.
+    - We could include integration tests to refine the Gemini prompt to mitigate hallucinations or otherwise low-quality responses
   
 ## Next Steps
-
 - Consider caching, rate limiting, retries, and scaling.
+- Author aliases should be accounted for
