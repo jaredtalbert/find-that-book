@@ -9,3 +9,6 @@
 - we probably want the server to be in charge of the Gemini client to prevent abuse
   - given more time, we'd want to enforce rate limits
 - we can use gemini to build a couple more specific queries
+- working with codex on getting a plan together for the ranking algo
+  - interview-style back and forth really helped to nail down the overall logic
+  - the first-pass implementation of the bulk of the ranking pipeline is pretty big; how can we be sure the tests aren't biased?
