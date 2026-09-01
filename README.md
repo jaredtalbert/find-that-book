@@ -38,7 +38,6 @@ search endpoint is `GET /Search?q={query}`.
 
 ### Limitations
 
-- The API is tightly coupled to OpenLibrary and Gemini. Future integrations will require a decent refactor.
 - Caching is not implemented, so repeated requests for the same query still go through the entire response pipeline.
 - Occasionally Gemini will hallucinate values, leading to false reasoning. For example, searching "Harry Potter" may
   show some works with "Matches remembered details: magic, fantasy".
@@ -53,6 +52,22 @@ controller tests with:
 dotnet test "Find That Book.sln"
 ```
 
+## Completed Extras
+- `More sophisticated normalization for punctuation, diacritics, subtitles, aliases, or misspellings`
+- Advanced contributor-vs-primary-author resolution using additional Open Library endpoints
+- `A deployed demo or hosted version of the project`
+
+## Deliberate omissions
+- `LLM-based re-ranking after deterministic candidate retrieval`
+  - Reversing the order on this reduces latency
+- `Caching, retries, resilience policies, observability, or other production-oriented API concerns`
+  - Time constraints
+- `A richer UI, accessibility refinements, loading states, or thoughtful interaction design beyond the basic
+  workflow`
+  - The UI is generic AI boilerplate design.
+- `Additional automated test coverage, contract tests, or test doubles around external dependencies`
+  - We could include integration tests to refine the Gemini prompt to mitigate hallucinations or otherwise low-quality responses
+  
 ## Next Steps
 
 - Consider caching, rate limiting, retries, and scaling.
