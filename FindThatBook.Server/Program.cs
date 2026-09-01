@@ -6,7 +6,10 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+
+builder.Services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
+
 
 builder.Services.AddHttpClient(OpenLibraryApiConnectionService.ServiceKey, client => {
     client.BaseAddress = new Uri("https://openlibrary.org/");

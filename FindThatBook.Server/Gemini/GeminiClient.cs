@@ -1,3 +1,6 @@
+using System.Text.Json;
+using FindThatBook.Server.Models;
+using FindThatBook.Server.Serialization;
 using Google.GenAI;
 using Google.GenAI.Types;
 
@@ -44,15 +47,21 @@ public static class GeminiClient {
 
     private static Client Client { get; } = new Client();
 
-    public async static Task<string> SimplifyUserQueryAsync(string query) {
+    public async static Task<GeminiResponse> SimplifyUserQueryAsync(string query) {
         if (string.IsNullOrEmpty(query)) {
             throw new ArgumentNullException(nameof(query));
         }
 
         GenerateContentResponse response = await Client.Models.GenerateContentAsync(Model, StarterPrompt + query);
 
+        string? simplifyUserQueryAsync = response.Candidates[0].Content.Parts[0].Text;
+
+        GeminiResponse canonicalizedGeminiResponse = JsonSerializer.Deserialize<GeminiResponse>(
+            simplifyUserQueryAsync,
+            JsonDefaults.Options);
+
         Console.Out.WriteLine("Gemini Response: " + response);
 
-        return response.Candidates[0].Content.Parts[0].Text; // todo: error check
+        return canonicalizedGeminiResponse; // todo: error check
     }
 }

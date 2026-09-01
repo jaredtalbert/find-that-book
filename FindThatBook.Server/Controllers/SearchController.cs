@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FindThatBook.Server.Models;
+using FindThatBook.Server.Serialization;
 using FindThatBook.Server.Services;
 using FindThatBook.Server.Services.OpenLibrary;
 using Microsoft.AspNetCore.Mvc;
@@ -27,9 +28,11 @@ public class SearchController : ControllerBase {
             response.EnsureSuccessStatusCode();
 
             string content = await response.Content.ReadAsStringAsync(cancellationToken);
-            
+
             // TODO: This defeats the purpose of DIing IApiConnectionService
-            OpenLibraryResponse openLibraryResponse = JsonSerializer.Deserialize<OpenLibraryResponse>(content);
+            OpenLibraryResponse openLibraryResponse = JsonSerializer.Deserialize<OpenLibraryResponse>(
+                content,
+                JsonDefaults.Options);
 
             return new OkObjectResult(openLibraryResponse);
         } catch (HttpRequestException) {
