@@ -1,3 +1,5 @@
+using FindThatBook.Server.Gemini;
+
 namespace FindThatBook.Server.Services.OpenLibrary;
 
 public class OpenLibraryApiConnectionService : IApiConnectionService {
@@ -11,7 +13,9 @@ public class OpenLibraryApiConnectionService : IApiConnectionService {
 
     public async Task<HttpResponseMessage> SearchAsync(string query, CancellationToken cancellationToken = default) {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
-        
-        return await HttpClient.GetAsync($"search.json?q={Uri.EscapeDataString(query)}", cancellationToken);
+
+        string geminiResult = await GeminiService.SimplifyUserQueryAsync(query);
+        // TODO: the OL API lets us request specific fields; adjust the query parameters so we're not wasting resources
+        return await HttpClient.GetAsync($"search.json?q={Uri.EscapeDataString(geminiResult)}", cancellationToken);
     }
 }
