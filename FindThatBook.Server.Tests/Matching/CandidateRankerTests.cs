@@ -196,6 +196,24 @@ public class CandidateRankerTests {
     }
 
     [Fact]
+    public void Rank_UsesSearchDocumentSubjectsWithoutSeparateRankingMetadata() {
+        QueryIntent intent = Intent(keywords: ["space", "politics"]);
+
+        Doc document = new() {
+            Key = "work-1",
+            Title = "The Dispossessed",
+            AuthorName = [],
+            AuthorKey = [],
+            Subjects = ["Space exploration", "Politics in fiction"]
+        };
+
+        RankedCandidate result = Single(intent, new CandidateRankingInput(document));
+
+        Assert.Equal(["space", "politics"], result.Evidence.MatchedKeywords);
+        Assert.True(result.IsUseful);
+    }
+
+    [Fact]
     public void Rank_UsesTotalEvidenceBeforeLateTieBreakers() {
         QueryIntent intent = Intent(keywords: ["magic", "school", "mythology"]);
         CandidateRankingInput stronger = Candidate("z-work", "Magic School");

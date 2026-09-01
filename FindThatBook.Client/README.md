@@ -7,4 +7,7 @@
   - Normalizer
 ## Web API
 
+### Limitations
+
+- The API is tightly coupled to OpenLibrary and Gemini. Future integrations will require a decent refactor.
 ## Client

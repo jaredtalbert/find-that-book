@@ -27,7 +27,10 @@ public sealed class CandidateRanker : ICandidateRanker {
             .ThenByDescending(candidate => candidate.Evidence.AuthorScore)
             .ThenByDescending(candidate => candidate.Evidence.TitleScore)
             .ThenByDescending(candidate => candidate.Evidence.YearKind == YearMatchKind.Exact)
-            .ThenByDescending(candidate => candidate.Candidate.RankingMetadata.EditionCount ?? 0)
+            .ThenByDescending(candidate =>
+                candidate.Candidate.RankingMetadata.EditionCount ??
+                candidate.Candidate.SearchDocument.EditionCount ??
+                0)
             .ThenBy(candidate => candidate.Candidate.SearchDocument.Key ?? string.Empty, StringComparer.Ordinal)
             .ToArray();
     }
@@ -239,7 +242,8 @@ public sealed class CandidateRanker : ICandidateRanker {
         HashSet<string> titleTokens = TextNormalizer.NormalizeTitle(candidate.SearchDocument.Title).Full.LooseTokens
             .ToHashSet(StringComparer.Ordinal);
 
-        HashSet<string> subjectTokens = candidate.RankingMetadata.SubjectValues
+        HashSet<string> subjectTokens = candidate.SearchDocument.Subjects
+            .Concat(candidate.RankingMetadata.SubjectValues)
             .SelectMany(subject => TextNormalizer.Normalize(subject).LooseTokens)
             .ToHashSet(StringComparer.Ordinal);
 
@@ -271,12 +275,12 @@ public sealed class CandidateRanker : ICandidateRanker {
         return new KeywordEvidence(matches, Math.Min(score, RankingScores.KeywordMaximum), distinctive);
     }
 
-    private static YearEvidence EvaluateYear(QueryField<long>? queryField, long candidateYear) {
-        if (queryField is null || candidateYear <= 0) {
+    private static YearEvidence EvaluateYear(QueryField<long>? queryField, long? candidateYear) {
+        if (queryField is null || candidateYear is null or <= 0) {
             return YearEvidence.None;
         }
 
-        long difference = Math.Abs(queryField.Value - candidateYear);
+        long difference = Math.Abs(queryField.Value - candidateYear.Value);
 
         return difference switch {
             0 => new YearEvidence(YearMatchKind.Exact,

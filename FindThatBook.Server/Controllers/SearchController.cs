@@ -32,7 +32,7 @@ public class SearchController : ControllerBase {
             // TODO: This defeats the purpose of DIing IApiConnectionService
             OpenLibraryResponse openLibraryResponse = JsonSerializer.Deserialize<OpenLibraryResponse>(
                 content,
-                JsonDefaults.Options);
+                JsonDefaults.Options) ?? throw new JsonException("OpenLibrary returned an empty response.");
 
             return new OkObjectResult(openLibraryResponse);
         } catch (HttpRequestException) {
