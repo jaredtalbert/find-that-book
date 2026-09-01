@@ -12,11 +12,14 @@ public class BookSearchServiceTests {
     [Fact]
     public async Task SearchAsync_UsesStructuredDiscoveryAndRejectsCanonicalAuthorConflicts() {
         QueryIntent intent = Intent(title: "Dune", author: "Frank Herbert");
+        Doc exact = Document("exact", "Dune", ["Frank Herbert"], ["frank"]);
+        exact.CoverId = 123;
+        exact.FirstPublishYear = 1965;
 
         StubBookCatalogClient catalog = new() {
             SearchResponse = Response(
                 Document("wrong", "Dune", ["Ursula Le Guin"], ["wrong-author"]),
-                Document("exact", "Dune", ["Frank Herbert"], ["frank"]),
+                exact,
                 Document("related", "Dune Messiah", ["Frank Herbert"], ["frank"]))
         };
 
@@ -25,16 +28,25 @@ public class BookSearchServiceTests {
         catalog.Works["related"] = Work("related", "Dune Messiah", "frank");
         BookSearchService service = CreateService(new StubQueryInterpreter(intent), catalog, new CandidateRanker());
 
-        OpenLibraryResponse result = await service.SearchAsync("Dune by Frank Herbert", CancellationToken.None);
+        BookSearchResponse result = await service.SearchAsync("Dune by Frank Herbert", CancellationToken.None);
 
         Assert.NotNull(catalog.SearchRequest);
         Assert.Equal("Dune", catalog.SearchRequest.Title);
         Assert.Equal("Frank Herbert", catalog.SearchRequest.Author);
         Assert.Null(catalog.SearchRequest.RawQuery);
         Assert.Equal(25, catalog.SearchRequest.Limit);
-        Assert.Equal(["exact", "related"], result.Docs.Select(document => document.Key));
-        Assert.DoesNotContain(result.Docs, document => document.Key == "wrong");
+        Assert.Equal(["exact", "related"], result.Results.Select(candidate => candidate.OpenLibraryKey));
+        Assert.DoesNotContain(result.Results, candidate => candidate.OpenLibraryKey == "wrong");
         Assert.Empty(catalog.AuthorRequests);
+
+        BookSearchCandidate best = result.Results[0];
+        Assert.Equal("Dune", best.Title);
+        Assert.Equal(["Frank Herbert"], best.Authors);
+        Assert.Equal(1965, best.FirstPublishYear);
+        Assert.Equal("https://openlibrary.org/works/exact", best.OpenLibraryUrl);
+        Assert.Equal("https://covers.openlibrary.org/b/id/123-M.jpg", best.CoverImageUrl);
+        Assert.Equal(SearchConfidence.Strong, best.Confidence);
+        Assert.Equal("Exact title match; Exact primary-author match for Frank Herbert.", best.Explanation);
     }
 
     [Fact]
@@ -50,11 +62,14 @@ public class BookSearchServiceTests {
             catalog,
             new CandidateRanker());
 
-        OpenLibraryResponse result = await service.SearchAsync("boy wizard school", CancellationToken.None);
+        BookSearchResponse result = await service.SearchAsync("boy wizard school", CancellationToken.None);
 
         Assert.Equal("boy wizard school", catalog.SearchRequest?.RawQuery);
         Assert.Null(catalog.SearchRequest?.Title);
-        Assert.Equal("wizard", Assert.Single(result.Docs).Key);
+        BookSearchCandidate candidate = Assert.Single(result.Results);
+        Assert.Equal("wizard", candidate.OpenLibraryKey);
+        Assert.Equal(SearchConfidence.Likely, candidate.Confidence);
+        Assert.Equal("Matches remembered details: boy, wizard, school.", candidate.Explanation);
         Assert.Contains("wizard", catalog.WorkRequests);
     }
 
@@ -129,13 +144,18 @@ public class BookSearchServiceTests {
             catalog,
             ranker);
 
-        await service.SearchAsync("Shared Title by Secondary Author", CancellationToken.None);
+        BookSearchResponse result = await service.SearchAsync(
+            "Shared Title by Secondary Author",
+            CancellationToken.None);
 
         CandidateRankingMetadata metadata = Assert.Single(ranker.FinalInputs).RankingMetadata;
         Assert.Equal(["Primary Author", "Secondary Author"], metadata.CanonicalAuthors);
         Assert.Equal("Canonical Title", metadata.CanonicalTitle);
         Assert.True(metadata.HasCompleteCanonicalAuthorData);
         Assert.Equal("primary", Assert.Single(catalog.AuthorRequests));
+        BookSearchCandidate responseCandidate = Assert.Single(result.Results);
+        Assert.Equal("Canonical Title", responseCandidate.Title);
+        Assert.Equal(["Primary Author", "Secondary Author"], responseCandidate.Authors);
     }
 
     [Fact]
@@ -154,11 +174,14 @@ public class BookSearchServiceTests {
             catalog,
             ranker);
 
-        await service.SearchAsync("Shared Title by Secondary Author", CancellationToken.None);
+        BookSearchResponse result = await service.SearchAsync(
+            "Shared Title by Secondary Author",
+            CancellationToken.None);
 
         CandidateRankingMetadata metadata = Assert.Single(ranker.FinalInputs).RankingMetadata;
         Assert.Equal([string.Empty, "Secondary Author"], metadata.CanonicalAuthors);
         Assert.False(metadata.HasCompleteCanonicalAuthorData);
+        Assert.Equal(["Secondary Author"], Assert.Single(result.Results).Authors);
     }
 
     [Fact]
@@ -187,9 +210,9 @@ public class BookSearchServiceTests {
             catalog,
             new CapturingRanker());
 
-        OpenLibraryResponse result = await service.SearchAsync("Dune", CancellationToken.None);
+        BookSearchResponse result = await service.SearchAsync("Dune", CancellationToken.None);
 
-        Assert.Equal(4, result.Docs.Count);
+        Assert.Equal(4, result.Results.Count);
         Assert.Equal("same-work", Assert.Single(catalog.WorkRequests));
     }
 
@@ -206,9 +229,9 @@ public class BookSearchServiceTests {
             catalog,
             new CandidateRanker());
 
-        OpenLibraryResponse result = await service.SearchAsync("Dune", CancellationToken.None);
+        BookSearchResponse result = await service.SearchAsync("Dune", CancellationToken.None);
 
-        Assert.Empty(result.Docs);
+        Assert.Empty(result.Results);
     }
 
     [Fact]
@@ -230,9 +253,9 @@ public class BookSearchServiceTests {
             catalog,
             new CandidateRanker());
 
-        OpenLibraryResponse result = await service.SearchAsync("Dune", CancellationToken.None);
+        BookSearchResponse result = await service.SearchAsync("Dune", CancellationToken.None);
 
-        Assert.Equal(5, result.Docs.Count);
+        Assert.Equal(5, result.Results.Count);
         Assert.Equal(5, catalog.WorkRequests.Count);
     }
 
@@ -340,6 +363,8 @@ public class BookSearchServiceTests {
     private sealed class StubBookCatalogClient : IBookCatalogClient {
         public OpenLibraryResponse SearchResponse { get; init; } = new();
 
+        public Func<BookCatalogSearchRequest, BookCatalogSearchResult>? SearchHandler { get; init; }
+
         public Dictionary<string, OpenLibraryWork> Works { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public Dictionary<string, OpenLibraryAuthor> Authors { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -350,13 +375,19 @@ public class BookSearchServiceTests {
 
         public ConcurrentBag<string> AuthorRequests { get; } = [];
 
-        public BookCatalogSearchRequest? SearchRequest { get; private set; }
+        public ConcurrentQueue<BookCatalogSearchRequest> SearchRequests { get; } = [];
+
+        public BookCatalogSearchRequest? SearchRequest => SearchRequests.LastOrDefault();
 
         public Task<BookCatalogSearchResult> SearchAsync(
             BookCatalogSearchRequest request,
             CancellationToken cancellationToken = default) {
             cancellationToken.ThrowIfCancellationRequested();
-            SearchRequest = request;
+            SearchRequests.Enqueue(request);
+
+            if (SearchHandler is not null) {
+                return Task.FromResult(SearchHandler(request));
+            }
 
             return Task.FromResult(new BookCatalogSearchResult(
                 SearchResponse.Start,
