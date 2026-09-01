@@ -32,9 +32,31 @@ search endpoint is `GET /Search?q={query}`.
   query.
 - The initial pool of results ("candidates") from OpenLibrary is passed into the response pipeline which:
   - Normalizes the title and author
+    - `TextNormalizer.cs`
   - Removes duplicates
+    - `BookSearchService.cs:Deduplicate()`
   - Scores each candidate (details below)
   - Returns <=5 strongest candidates.
+
+### Scoring Logic
+
+- Ranking runs twice: first against the deduplicated search results to select up to five candidates for enrichment, then
+  again using canonical OpenLibrary titles, authors, subjects, and edition counts.
+
+| Evidence | Score | Matching logic |
+| --- | ---: | --- |
+| Title | 0-60 | Exact matches score highest; token overlap and Damerau-Levenshtein fuzzy matches receive partial credit. |
+| Author | -50-35 | Exact names score highest, followed by initials/surname, token overlap, and fuzzy surname matches. |
+| Keywords | 0-10 | Title or subject matches add 2 points, or 3 for distinctive keywords. |
+| Year | 0-5 | Exact year: 5; within one year: 3; within three years: 1. |
+
+- A confirmed canonical-author mismatch applies a -50 penalty. Gemini-inferred evidence receives 70% of its normal
+  score, and fully inferred queries require matches in at least two categories and a total score of at least 35.
+- Raw score alone does not make a result eligible: title and author queries require a meaningful match, while
+  keyword-only queries require two matches or one distinctive keyword. Fallback queries may qualify through meaningful
+  title, author, or keyword evidence.
+- Candidates are ordered by total score, then evidence strength, primary-author match, component scores, exact year,
+  edition count, and OpenLibrary key to produce stable ties. Only eligible candidates are returned.
 
 ### Limitations
 
@@ -54,7 +76,7 @@ dotnet test "Find That Book.sln"
 
 ## Completed Extras
 - `More sophisticated normalization for punctuation, diacritics, subtitles, aliases, or misspellings`
-- Advanced contributor-vs-primary-author resolution using additional Open Library endpoints
+- `Advanced contributor-vs-primary-author resolution using additional Open Library endpoints`
 - `A deployed demo or hosted version of the project`
 
 ## Deliberate omissions
