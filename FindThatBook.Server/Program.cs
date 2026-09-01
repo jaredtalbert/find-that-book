@@ -2,6 +2,7 @@ using FindThatBook.Server.Gemini;
 using FindThatBook.Server.Matching;
 using FindThatBook.Server.Services;
 using FindThatBook.Server.Services.OpenLibrary;
+using Microsoft.AspNetCore.StaticFiles;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -33,7 +34,13 @@ if (app.Environment.IsDevelopment()) {
 app.UseHttpsRedirection();
 
 app.UseDefaultFiles();
-app.UseStaticFiles();
+
+FileExtensionContentTypeProvider contentTypes = new();
+contentTypes.Mappings[".dat"] = "application/octet-stream";
+
+app.UseStaticFiles(new StaticFileOptions {
+    ContentTypeProvider = contentTypes
+});
 
 app.MapControllers();
 app.MapFallbackToFile("index.html");
