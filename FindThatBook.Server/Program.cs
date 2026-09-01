@@ -15,7 +15,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddHttpClient<IBookCatalogClient, OpenLibraryCatalogClient>(client => {
     client.BaseAddress = new Uri("https://openlibrary.org/");
     client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
-    client.Timeout = TimeSpan.FromSeconds(5);
+    client.Timeout = TimeSpan.FromSeconds(10);
 });
 
 builder.Services.AddSingleton<IGeminiTextClient, GeminiTextClient>();

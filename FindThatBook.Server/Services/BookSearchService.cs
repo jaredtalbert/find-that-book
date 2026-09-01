@@ -68,9 +68,8 @@ public sealed class BookSearchService(
     private async Task<QueryIntent> InterpretAsync(string query, CancellationToken cancellationToken) {
         try {
             return await QueryInterpreter.InterpretAsync(query, cancellationToken);
-        } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
-            throw;
-        } catch (Exception exception) {
+        } catch (Exception exception) when (
+            exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested) {
             Logger.LogWarning(exception,
                 "Query interpreter failed outside its fallback boundary; using the raw query.");
 
@@ -117,9 +116,8 @@ public sealed class BookSearchService(
                 primary.Start,
                 Math.Max(primary.TotalFound, relaxed.TotalFound),
                 mergedDocuments);
-        } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
-            throw;
-        } catch (Exception exception) {
+        } catch (Exception exception) when (
+            exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested) {
             Logger.LogWarning(exception,
                 "Relaxed catalog discovery failed; retaining the primary candidate pool.");
 
@@ -253,9 +251,8 @@ public sealed class BookSearchService(
                 CanonicalTitle: NonBlank(work.Title));
 
             return new CandidateRankingInput(document, metadata);
-        } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
-            throw;
-        } catch (Exception exception) {
+        } catch (Exception exception) when (
+            exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested) {
             Logger.LogWarning(exception,
                 "Unable to enrich catalog work {WorkKey}; retaining provisional evidence.",
                 document.Key);
@@ -308,9 +305,8 @@ public sealed class BookSearchService(
                 string? resolvedName = NonBlank(author.Name);
                 canonicalAuthors.Add(resolvedName ?? string.Empty);
                 isComplete &= resolvedName is not null;
-            } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
-                throw;
-            } catch (Exception exception) {
+            } catch (Exception exception) when (
+                exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested) {
                 Logger.LogWarning(exception,
                     "Unable to resolve catalog author {AuthorKey}; continuing without its name.",
                     authorKey);

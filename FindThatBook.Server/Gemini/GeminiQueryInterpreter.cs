@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using FindThatBook.Server.Matching;
 using FindThatBook.Server.Models;
 using FindThatBook.Server.Serialization;
+using Google.GenAI;
 
 namespace FindThatBook.Server.Gemini;
 
@@ -58,9 +59,14 @@ public sealed class GeminiQueryInterpreter(
                 InterpretationJsonOptions) ?? throw new JsonException("Gemini returned an empty interpretation.");
 
             return Map(query, interpretation);
-        } catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {
-            throw;
-        } catch (Exception exception) {
+        } catch (ServerError exception) {
+            Logger.LogWarning(
+                "Gemini is temporarily unavailable; using deterministic raw-query fallback. {GeminiError}",
+                exception.Message);
+
+            return QueryIntent.CreateFallback(query);
+        } catch (Exception exception) when (
+            exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested) {
             Logger.LogWarning(exception,
                 "Gemini query interpretation failed; using deterministic raw-query fallback.");
 
