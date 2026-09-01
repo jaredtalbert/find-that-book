@@ -36,9 +36,28 @@ public sealed class CandidateRanker : ICandidateRanker {
     }
 
     private static RankedCandidate Evaluate(QueryIntent intent, CandidateRankingInput candidate) {
+        QueryField<string>? titleQuery = intent.Title;
+        QueryField<string>? authorQuery = intent.Author;
+        bool usesAmbiguousFallbackAuthor = false;
+
+        if (ShouldEvaluateFallbackAsSparseEvidence(intent)) {
+            QueryField<string> fallbackField = new(intent.OriginalQuery, QueryFieldProvenance.Extracted);
+            titleQuery ??= fallbackField;
+
+            if (authorQuery is null) {
+                authorQuery = fallbackField;
+                usesAmbiguousFallbackAuthor = true;
+            }
+        }
+
         string candidateTitle = candidate.RankingMetadata.CanonicalTitle ?? candidate.SearchDocument.Title;
-        TitleEvidence title = EvaluateTitle(intent.Title, candidateTitle);
-        AuthorEvidence author = EvaluateAuthor(intent.Author, candidate);
+        TitleEvidence title = EvaluateTitle(titleQuery, candidateTitle);
+
+        AuthorEvidence author = EvaluateAuthor(
+            authorQuery,
+            candidate,
+            allowCanonicalConflict: !usesAmbiguousFallbackAuthor);
+
         KeywordEvidence keywords = EvaluateKeywords(intent.KeywordFields, candidate);
         YearEvidence year = EvaluateYear(intent.Year, candidate.SearchDocument.FirstPublishYear);
 
@@ -59,6 +78,17 @@ public sealed class CandidateRanker : ICandidateRanker {
             year.Score);
 
         return new RankedCandidate(candidate, evidence, IsUseful(intent, evidence));
+    }
+
+    private static bool ShouldEvaluateFallbackAsSparseEvidence(QueryIntent intent) {
+        if (!intent.UsedFallback) {
+            return false;
+        }
+
+        IReadOnlyList<string> significantTokens = SignificantTokens(
+            TextNormalizer.Normalize(intent.OriginalQuery).LooseTokens);
+
+        return significantTokens.Count <= 3;
     }
 
     private static TitleEvidence EvaluateTitle(QueryField<string>? queryField, string? candidateTitle) {
@@ -124,7 +154,10 @@ public sealed class CandidateRanker : ICandidateRanker {
         return TitleEvidence.None;
     }
 
-    private static AuthorEvidence EvaluateAuthor(QueryField<string>? queryField, CandidateRankingInput candidate) {
+    private static AuthorEvidence EvaluateAuthor(
+        QueryField<string>? queryField,
+        CandidateRankingInput candidate,
+        bool allowCanonicalConflict = true) {
         if (queryField is null || string.IsNullOrWhiteSpace(queryField.Value)) {
             return AuthorEvidence.None;
         }
@@ -153,7 +186,7 @@ public sealed class CandidateRanker : ICandidateRanker {
             }
         }
 
-        bool canConflict = queryField.Provenance != QueryFieldProvenance.Inferred;
+        bool canConflict = allowCanonicalConflict && queryField.Provenance != QueryFieldProvenance.Inferred;
 
         bool hasNamedCanonicalAuthor = metadata.CanonicalAuthors.Any(author => !string.IsNullOrWhiteSpace(author));
 
@@ -272,7 +305,10 @@ public sealed class CandidateRanker : ICandidateRanker {
         bool distinctive = false;
 
         foreach (QueryField<string> field in keywordFields) {
-            foreach (string keyword in SignificantTokens(TextNormalizer.Normalize(field.Value).LooseTokens)) {
+            IEnumerable<string> keywords = TextNormalizer.Normalize(field.Value).LooseTokens
+                .Where(keyword => !StopWords.Contains(keyword));
+
+            foreach (string keyword in keywords) {
                 if (!seen.Add(keyword)) {
                     continue;
                 }
@@ -317,12 +353,20 @@ public sealed class CandidateRanker : ICandidateRanker {
         bool hasAuthor = HasValue(intent.Author);
         bool hasKeywords = intent.KeywordFields.Any(keyword => !string.IsNullOrWhiteSpace(keyword.Value));
 
+        bool keywordMatch = evidence.MatchedKeywords.Count >= RankingThresholds.KeywordOnlyMatchCount ||
+                            evidence.HasDistinctiveKeywordMatch;
+
+        if (intent.UsedFallback) {
+            return evidence.HasMeaningfulTitleMatch ||
+                   evidence.HasMeaningfulAuthorMatch ||
+                   keywordMatch;
+        }
+
         bool useful = (hasTitle, hasAuthor, hasKeywords) switch {
             (true, true, _) => evidence.HasMeaningfulTitleMatch && !evidence.HasCanonicalAuthorConflict,
             (true, false, _) => evidence.HasMeaningfulTitleMatch,
             (false, true, _) => evidence.HasMeaningfulAuthorMatch && !evidence.HasCanonicalAuthorConflict,
-            (false, false, true) => evidence.MatchedKeywords.Count >= RankingThresholds.KeywordOnlyMatchCount ||
-                                    evidence.HasDistinctiveKeywordMatch,
+            (false, false, true) => keywordMatch,
             _ => false
         };
 
@@ -478,8 +522,8 @@ public sealed class CandidateRanker : ICandidateRanker {
             return 0;
         }
 
-        double queryCoverage = (double)matches / queryCount;
-        double candidatePrecision = (double)matches / candidateCount;
+        double queryCoverage = matches / queryCount;
+        double candidatePrecision = matches / candidateCount;
 
         return queryCoverage * 0.75 + candidatePrecision * 0.25;
     }

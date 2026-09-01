@@ -68,9 +68,29 @@ public class BookSearchServiceTests {
         Assert.Null(catalog.SearchRequest?.Title);
         BookSearchCandidate candidate = Assert.Single(result.Results);
         Assert.Equal("wizard", candidate.OpenLibraryKey);
-        Assert.Equal(SearchConfidence.Likely, candidate.Confidence);
-        Assert.Equal("Matches remembered details: boy, wizard, school.", candidate.Explanation);
+        Assert.Equal(SearchConfidence.Strong, candidate.Confidence);
+        Assert.Equal("Exact title match; Matches remembered details: boy, wizard, school.", candidate.Explanation);
         Assert.Contains("wizard", catalog.WorkRequests);
+    }
+
+    [Fact]
+    public async Task SearchAsync_ReturnsSparseFallbackTitleWithAConciseExplanation() {
+        StubBookCatalogClient catalog = new() {
+            SearchResponse = Response(Document("dune", "Dune", ["Frank Herbert"]))
+        };
+
+        catalog.WorkFailures.Add("dune");
+
+        BookSearchService service = CreateService(
+            new StubQueryInterpreter(QueryIntent.CreateFallback("Dune")),
+            catalog,
+            new CandidateRanker());
+
+        BookSearchCandidate candidate = Assert.Single(
+            (await service.SearchAsync("Dune", CancellationToken.None)).Results);
+
+        Assert.Equal(SearchConfidence.Strong, candidate.Confidence);
+        Assert.Equal("Exact title match.", candidate.Explanation);
     }
 
     [Fact]

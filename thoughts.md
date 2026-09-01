@@ -13,3 +13,8 @@
   - interview-style back and forth really helped to nail down the overall logic
   - the first-pass implementation of the bulk of the ranking pipeline is pretty big; how can we be sure the tests aren't biased?
   - breaking this into smaller chunks, testing specific functionality after each pass, and nailing down the implementation > fully vibing it
+
+# system design
+- backend would likely benefit from horizontal scaling w/ k8s or such
+- investigate Gemini's recommendations for load balancing (if any)
+  - similarly with OpenLibrary - they seem to have fewer API protections. we may need to ensure we don't DoS them

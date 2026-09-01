@@ -219,6 +219,47 @@ public class CandidateRankerTests {
     }
 
     [Fact]
+    public void Rank_RawFallbackTreatsSparseInputAsAmbiguousTitleOrAuthorEvidence() {
+        QueryIntent titleIntent = QueryIntent.CreateFallback("Dune");
+        QueryIntent authorIntent = QueryIntent.CreateFallback("Dickens");
+
+        RankedCandidate title = Single(titleIntent, Candidate("title", "Dune", authors: ["Frank Herbert"]));
+
+        RankedCandidate author = Single(authorIntent,
+            Candidate("author", "Great Expectations", authors: ["Charles Dickens"]));
+
+        Assert.Equal(TitleMatchKind.ExactFullTitle, title.Evidence.TitleKind);
+        Assert.True(title.IsUseful);
+        Assert.Equal(AuthorMatchKind.ExactSurname, author.Evidence.AuthorKind);
+        Assert.True(author.IsUseful);
+    }
+
+    [Fact]
+    public void Rank_AmbiguousFallbackAuthorMismatchDoesNotCreateCanonicalConflict() {
+        QueryIntent intent = QueryIntent.CreateFallback("Dune");
+
+        CandidateRankingMetadata metadata = new(
+            CanonicalAuthorNames: ["Frank Herbert"],
+            HasCanonicalAuthorData: true,
+            HasCompleteCanonicalAuthorData: true);
+
+        RankedCandidate result = Single(intent, Candidate("work", "Dune", metadata: metadata));
+
+        Assert.False(result.Evidence.HasCanonicalAuthorConflict);
+        Assert.True(result.IsUseful);
+    }
+
+    [Fact]
+    public void Rank_StopWordsDoNotCountAsKeywordEvidence() {
+        QueryIntent intent = Intent(keywords: ["and", "magic"]);
+
+        RankedCandidate result = Single(intent, Candidate("work", "Magic and Mystery"));
+
+        Assert.Equal(["magic"], result.Evidence.MatchedKeywords);
+        Assert.False(result.IsUseful);
+    }
+
+    [Fact]
     public void Rank_UsesSubjectsAsSupportingKeywordEvidence() {
         QueryIntent intent = Intent(keywords: ["space", "politics"]);
         CandidateRankingMetadata metadata = new(Subjects: ["Space exploration", "Politics in fiction"]);

@@ -76,13 +76,19 @@ internal static class BookSearchResultFactory {
             reasons.Add(titleReason);
         }
 
-        string? authorReason = ExplainAuthor(intent.Author?.Value, evidence);
+        string? authorReason = ExplainAuthor(
+            intent.Author?.Value ?? (intent.UsedFallback ? intent.OriginalQuery : null),
+            evidence);
 
         if (authorReason is not null) {
             reasons.Add(authorReason);
         }
 
-        if (evidence.MatchedKeywords.Count > 0) {
+        bool singleKeywordAlreadyExplained = evidence.MatchedKeywords.Count == 1 &&
+                                             (evidence.HasMeaningfulTitleMatch ||
+                                              evidence.HasMeaningfulAuthorMatch);
+
+        if (evidence.MatchedKeywords.Count > 0 && !singleKeywordAlreadyExplained) {
             reasons.Add($"Matches remembered details: {string.Join(", ", evidence.MatchedKeywords)}");
         }
 
