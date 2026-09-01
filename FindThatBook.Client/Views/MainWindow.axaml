@@ -1,19 +1,15 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:FindThatBook.Client.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
-        d:DesignWidth="1180"
-        d:DesignHeight="760"
-        x:Class="FindThatBook.Client.Views.MainWindow"
-        x:DataType="vm:MainViewModel"
-        Background="#F5F2EA"
-        MinWidth="760">
-
-    <Design.DataContext>
-        <vm:MainViewModel />
-    </Design.DataContext>
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FindThatBook.Client.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1180"
+             d:DesignHeight="760"
+             x:Class="FindThatBook.Client.Views.MainWindow"
+             x:DataType="vm:MainViewModel"
+             Background="#F5F2EA"
+             MinWidth="760">
 
     <UserControl.Resources>
         <SolidColorBrush x:Key="InkBrush" Color="#22231F" />
@@ -68,6 +64,14 @@
             <Setter Property="Padding" Value="10,0" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
+        <Style Selector="Border.result-card">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource HairlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Padding" Value="24" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*">
@@ -120,12 +124,13 @@
                                    Classes="title"
                                    TextWrapping="Wrap"
                                    MaxWidth="650" />
-                        <TextBlock Text="Enter any title fragment, author, character, plot detail, or stray keyword you can remember."
-                                   FontSize="17"
-                                   LineHeight="27"
-                                   Foreground="{StaticResource MutedInkBrush}"
-                                   TextWrapping="Wrap"
-                                   MaxWidth="620" />
+                        <TextBlock
+                            Text="Enter any title fragment, author, character, plot detail, or stray keyword you can remember."
+                            FontSize="17"
+                            LineHeight="27"
+                            Foreground="{StaticResource MutedInkBrush}"
+                            TextWrapping="Wrap"
+                            MaxWidth="620" />
                     </StackPanel>
 
                     <Border Grid.Column="1"
@@ -168,9 +173,14 @@
                         <TextBox Grid.Column="1"
                                  Classes="search-box"
                                  Text="{Binding SearchQuery}"
-                                 PlaceholderText="What do you remember?" />
+                                 PlaceholderText="What do you remember?">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding SearchCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
                         <Button Grid.Column="2"
                                 Classes="search-button"
+                                Command="{Binding SearchCommand}"
                                 Content="Search books"
                                 MinWidth="142" />
                     </Grid>
@@ -185,13 +195,14 @@
                                        Foreground="{StaticResource MutedInkBrush}" />
                         </StackPanel>
                         <TextBlock Grid.Column="1"
-                                   Text="0 RESULTS"
+                                   Text="{Binding ResultCountText}"
                                    Classes="eyebrow"
                                    Foreground="{StaticResource MutedInkBrush}"
                                    VerticalAlignment="Bottom" />
                     </Grid>
 
                     <Border Height="200"
+                            IsVisible="{Binding ShowInitialState}"
                             Background="{StaticResource SurfaceBrush}"
                             BorderBrush="{StaticResource HairlineBrush}"
                             BorderThickness="1"
@@ -219,6 +230,118 @@
                                        HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
+
+                    <Border Height="160"
+                            IsVisible="{Binding IsSearching}"
+                            Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource HairlineBrush}"
+                            BorderThickness="1"
+                            CornerRadius="18">
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="14">
+                            <ProgressBar Width="220" IsIndeterminate="True" />
+                            <TextBlock Text="Searching Open Library…"
+                                       FontFamily="Georgia"
+                                       FontSize="18"
+                                       FontWeight="Bold" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Height="180"
+                            IsVisible="{Binding ShowEmptyState}"
+                            Background="{StaticResource SurfaceBrush}"
+                            BorderBrush="{StaticResource HairlineBrush}"
+                            BorderThickness="1"
+                            CornerRadius="18">
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="9">
+                            <TextBlock Text="No likely matches"
+                                       FontFamily="Georgia"
+                                       FontSize="18"
+                                       FontWeight="Bold" />
+                            <TextBlock Text="Try adding a character, plot detail, author, or approximate year."
+                                       FontSize="13"
+                                       Foreground="{StaticResource MutedInkBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border IsVisible="{Binding HasError}"
+                            Background="#FAE9E5"
+                            BorderBrush="#D9A297"
+                            BorderThickness="1"
+                            CornerRadius="14"
+                            Padding="20">
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="Search unavailable"
+                                       FontWeight="Bold"
+                                       Foreground="#7A3026" />
+                            <TextBlock Text="{Binding ErrorMessage}"
+                                       TextWrapping="Wrap"
+                                       Foreground="#7A3026" />
+                        </StackPanel>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Candidates}"
+                                  IsVisible="{Binding ShowResults}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:BookCandidateViewModel">
+                                <Border Classes="result-card">
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <Border Grid.Column="0"
+                                                Width="54"
+                                                Height="72"
+                                                Margin="0,0,20,0"
+                                                CornerRadius="7"
+                                                Background="#E7E0D2">
+                                            <TextBlock Text="B"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       FontFamily="Georgia"
+                                                       FontSize="23"
+                                                       FontWeight="Bold"
+                                                       Foreground="#856B43" />
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" Spacing="7">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{Binding Title}"
+                                                           FontFamily="Georgia"
+                                                           FontSize="20"
+                                                           FontWeight="Bold"
+                                                           TextWrapping="Wrap" />
+                                                <Border Grid.Column="1"
+                                                        Margin="16,0,0,0"
+                                                        Padding="10,5"
+                                                        CornerRadius="12"
+                                                        Background="#E9EFEA"
+                                                        VerticalAlignment="Top">
+                                                    <TextBlock Text="{Binding Confidence}"
+                                                               Classes="eyebrow"
+                                                               FontSize="11"
+                                                               LetterSpacing="0.4" />
+                                                </Border>
+                                            </Grid>
+                                            <TextBlock Text="{Binding Authors}"
+                                                       FontSize="14"
+                                                       Foreground="{StaticResource MutedInkBrush}" />
+                                            <TextBlock
+                                                Text="{Binding FirstPublishYear, StringFormat='First published {0}'}"
+                                                FontSize="12"
+                                                Foreground="{StaticResource MutedInkBrush}" />
+                                            <TextBlock Text="{Binding Explanation}"
+                                                       Margin="0,4,0,0"
+                                                       FontSize="14"
+                                                       LineHeight="21"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </Grid>
         </ScrollViewer>

@@ -13,6 +13,12 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
 
+builder.Services.AddCors(options => options.AddPolicy("BrowserClient", policy =>
+    policy
+        .WithOrigins("http://localhost:5235", "http://127.0.0.1:5235")
+        .AllowAnyHeader()
+        .AllowAnyMethod()));
+
 builder.Services.AddHttpClient<IBookCatalogClient, OpenLibraryCatalogClient>(client => {
     client.BaseAddress = new Uri("https://openlibrary.org/");
     client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
@@ -29,6 +35,7 @@ WebApplication app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment()) {
     app.MapOpenApi();
+    app.UseCors("BrowserClient");
 }
 
 app.UseHttpsRedirection();
