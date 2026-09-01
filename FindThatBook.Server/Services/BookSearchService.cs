@@ -29,7 +29,7 @@ public sealed class BookSearchService(
 
     private ILogger<BookSearchService> Logger { get; } = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    public async Task<OpenLibraryResponse> SearchAsync(
+    public async Task<BookSearchResponse> SearchAsync(
         string query,
         CancellationToken cancellationToken = default) {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
@@ -41,11 +41,7 @@ public sealed class BookSearchService(
         Doc[] uniqueDocuments = Deduplicate(discovery.Documents).ToArray();
 
         if (uniqueDocuments.Length == 0) {
-            return new OpenLibraryResponse {
-                Start = discovery.Start,
-                NumFound = discovery.TotalFound,
-                Docs = []
-            };
+            return new BookSearchResponse();
         }
 
         CandidateRankingInput[] provisionalInputs = uniqueDocuments
@@ -60,14 +56,12 @@ public sealed class BookSearchService(
 
         IReadOnlyList<RankedCandidate> finalRanking = CandidateRanker.Rank(intent, enriched);
 
-        return new OpenLibraryResponse {
-            Start = discovery.Start,
-            NumFound = discovery.TotalFound,
-            Docs = finalRanking
+        return new BookSearchResponse {
+            Results = finalRanking
                 .Where(candidate => candidate.IsUseful)
                 .Take(EnrichmentLimit)
-                .Select(candidate => candidate.Candidate.SearchDocument)
-                .ToList()
+                .Select(candidate => BookSearchResultFactory.Create(intent, candidate))
+                .ToArray()
         };
     }
 

@@ -11,9 +11,8 @@ namespace FindThatBook.Server.Tests.Controllers;
 public class SearchControllerTests {
     [Fact]
     public async Task SearchAsync_ReturnsTheOrchestratedResponse() {
-        OpenLibraryResponse response = new() {
-            NumFound = 1,
-            Docs = [new Doc { Key = "OL1W", Title = "Dune" }]
+        BookSearchResponse response = new() {
+            Results = [new BookSearchCandidate { OpenLibraryKey = "OL1W", Title = "Dune" }]
         };
 
         SearchController controller = new(new StubBookSearchService(response));
@@ -26,7 +25,7 @@ public class SearchControllerTests {
 
     [Fact]
     public async Task SearchAsync_RejectsBlankQueriesBeforeCallingTheService() {
-        StubBookSearchService service = new(new OpenLibraryResponse());
+        StubBookSearchService service = new(new BookSearchResponse());
         SearchController controller = new(service);
 
         IActionResult action = await controller.SearchAsync("  ", CancellationToken.None);
@@ -50,27 +49,28 @@ public class SearchControllerTests {
     }
 
     private sealed class StubBookSearchService : IBookSearchService {
-        private readonly OpenLibraryResponse? _response;
-        private readonly Exception? _exception;
+        private BookSearchResponse? Response { get; }
 
-        public StubBookSearchService(OpenLibraryResponse response) {
-            _response = response;
+        private Exception? Exception { get; }
+
+        public StubBookSearchService(BookSearchResponse response) {
+            Response = response;
         }
 
         public StubBookSearchService(Exception exception) {
-            _exception = exception;
+            Exception = exception;
         }
 
         public int CallCount { get; private set; }
 
-        public Task<OpenLibraryResponse> SearchAsync(
+        public Task<BookSearchResponse> SearchAsync(
             string query,
             CancellationToken cancellationToken = default) {
             CallCount++;
 
-            return _exception is null
-                ? Task.FromResult(_response!)
-                : Task.FromException<OpenLibraryResponse>(_exception);
+            return Exception is null
+                ? Task.FromResult(Response!)
+                : Task.FromException<BookSearchResponse>(Exception);
         }
     }
 }
