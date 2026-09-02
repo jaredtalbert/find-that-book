@@ -18,3 +18,7 @@
 - backend would likely benefit from horizontal scaling w/ k8s or such
 - investigate Gemini's recommendations for load balancing (if any)
   - similarly with OpenLibrary - they seem to have fewer API protections. we may need to ensure we don't DoS them
+
+# limitations
+- there are not enough logs to be useful
+- ironically, the demo text returns no results
